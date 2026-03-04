@@ -4,9 +4,20 @@ export default async function Home() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("Club")
-    .select("name");
+    .from("item_category")
+    .select("Image_URL")
+    .eq("name", "Box")
+    .single();
 
+  if (!data) {
+    return <p>Item not found</p>;
+  }
+  const { data: publicUrlData } = supabase
+    .storage
+    .from("Item Category Pictures")
+    .getPublicUrl(data.Image_URL);
+  
+  const imageUrl = publicUrlData.publicUrl;
   if (error) {
     console.error(error);
     return <p>Error with loading the clubs</p>;
@@ -16,8 +27,8 @@ export default async function Home() {
     <div>
       <h1>First Club</h1>
       {/* Display first clubs Ex. */}
-      <h1>Name: {data?.[0]?.name}</h1>
-      
+      <h1>ImageURL: {publicUrlData.publicUrl}</h1>
+      <img src={publicUrlData.publicUrl}/>
       {/* Display all clubs Ex. */}
       {/* <ul className="space-y-2">
         {data?.map((club, index) => (
