@@ -1,6 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
 
-export default async function Home() {
+export default function Home() {
+  return (
+    <div>
+      <h1>First Club</h1>
+
+      <Suspense fallback={<p>Loading clubs...</p>}>
+        <ClubContent />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ClubContent() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -12,20 +25,5 @@ export default async function Home() {
     return <p>Error with loading the clubs</p>;
   }
 
-  return (
-    <div>
-      <h1>First Club</h1>
-      {/* Display first clubs Ex. */}
-      <h1>Name: {data?.[0]?.name}</h1>
-      
-      {/* Display all clubs Ex. */}
-      {/* <ul className="space-y-2">
-        {data?.map((club, index) => (
-          <li key={index} className="border p-2 rounded">
-            {club.name}
-          </li>
-        ))}
-      </ul> */}
-    </div>
-  );
+  return <h1>Name: {data?.[0]?.name}</h1>;
 }
