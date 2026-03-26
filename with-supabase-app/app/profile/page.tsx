@@ -1,9 +1,11 @@
+import PageTitle from "@/components/ui/pageTitle";
+
 export default function ProfilePage() {
   return (
     <div className="flex flex-col items-left justify-center gap-4 p-8 bg-base-100 min-h-screen text-base-content">
       
-      {/* Header */}
-      <h1 className="text-3xl font-bold">Your Profile</h1>
+      <PageTitle title="Your Profile" />
+
       <hr className="border-t border-secondary" />
 
       <div className="card-xl bg-base-100 w-full shadow-lg">
