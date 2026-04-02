@@ -1,9 +1,10 @@
 import Navbar from "@/components/ui/navbar"
+import PageTitle from "@/components/ui/pageTitle"
 export default function Page() {
     return (
         <><Navbar />
         <div className="flex flex-col items-left justify-center gap-4 p-8">
-            <h1 className="text-3xl font-bold">New Tile</h1>
+            <PageTitle title="New Tile" />
             <line className="border-t" />
             <div className="card-xl bg-base-100 w-full shadow-lg">
                 <div className="card-body items-left text-left">
