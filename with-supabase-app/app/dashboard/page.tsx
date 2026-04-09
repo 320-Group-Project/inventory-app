@@ -1,12 +1,22 @@
 /** Has placeholder clubs for now */
 
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { LogOut, Settings } from "lucide-react";
 export default function Page() {
-  const tiles = [
-    { org: "club1", role: "student" as const },
-    { org: "club2", role: "admin" as const },
-    { org: "club3", role: "admin" as const }
-  ];
+  const router = useRouter();
+  const initialTiles = useMemo(
+    () => [
+      { org: "club1", role: "student" as const },
+      { org: "club2", role: "admin" as const },
+      { org: "club3", role: "admin" as const },
+    ],
+    [],
+  );
+  const [tiles, setTiles] = useState(initialTiles);
   return (
     <div className="min-h-screen bg-background px-10 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -34,8 +44,29 @@ export default function Page() {
             <Link
               key={t.org}
               href={`/dashboard/${t.org.toLowerCase()}`}
-              className="card w-80 h-72 overflow-hidden rounded-2xl bg-card text-card-foreground border border-border shadow-md transition duration-200 hover:-translate-y-1 hover:shadow-xl"
+              className="card relative w-80 h-72 overflow-hidden rounded-2xl bg-card text-card-foreground border border-border shadow-md transition duration-200 hover:-translate-y-1 hover:shadow-xl"
             >
+              <button
+                type="button"
+                className="btn btn-circle btn-sm absolute right-3 top-5 z-10 bg-base-100/90 text-base-content border border-base-300 shadow-sm hover:bg-base-100"
+                aria-label={isAdmin ? "Club settings" : "Leave club"}
+                title={isAdmin ? "Settings" : "Leave club"}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  const org = t.org.toLowerCase();
+                  if (isAdmin) {
+                    router.push(`/clubs/${org}/settings`);
+                    return;
+                  }
+
+                  // Placeholder: until membership API exists, remove tile locally.
+                  setTiles((prev) => prev.filter((x) => x.org !== t.org));
+                }}
+              >
+                {isAdmin ? <Settings className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
+              </button>
               <div className={`h-3 w-full ${roleBar}`} />
               <div className="card-body p-6 justify-between">
                 <div>
