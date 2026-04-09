@@ -12,20 +12,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: newClub, error: clubError } = await supabase.from('CLUB').insert({ name: body.title }).select('club_id, name').single();
+  const { data: newClub, error: clubError } = await supabase.from('CLUB')
+    .insert({ name: body.title })
+    .select('club_id, name')
+    .single();
 
-  if (clubError) {
-    return NextResponse.json({ error: clubError.message }, { status: 400 });
+  if (clubError || !newClub) {
+    return NextResponse.json({ error: clubError?.message || "Failed to create club" }, { status: 400 });
   }
 
   await supabase.from('ROLE').insert({ club_id: newClub.club_id, name_id: user.id, role: 'Admin' });
 
   if (body.members) {
     const emailList = body.members.split(',')
-    .map((email: string) => email.trim())
-    .filter((email: string) => email.length > 0);
+      .map((email: string) => email.trim())
+      .filter((email: string) => email.length > 0);
     
-    const resend = new Resend("re_Qw2YH26J_3HKkBZCLE34RG1hkQhygs7EC");
+    const resend = new Resend(process.env.RESEND_API_KEY);
     
     for (const email of emailList) {
       await resend.emails.send({
@@ -35,11 +38,11 @@ export async function POST(request: Request) {
           id: 'club-invites',
           variables : {
             Club_Name : newClub.name,
-            Inviter : user.email,
+            Inviter : user.email || 'Unknown User', 
             Club_Link : `http://localhost:3000/api/clubs/${newClub.club_id}/members/invite/accept`
           }
         }
-      })
+      });
     }
   }
 
