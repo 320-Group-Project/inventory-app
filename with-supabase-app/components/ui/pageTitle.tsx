@@ -3,7 +3,7 @@ import Back from "./back"
 
 interface PageTitleProps {
   title: string;
-  href: string
+  href?: string
 }
 
 const PageTitle = ({title, href}: PageTitleProps) => {
