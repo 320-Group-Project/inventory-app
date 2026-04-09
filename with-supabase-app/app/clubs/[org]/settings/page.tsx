@@ -1,4 +1,5 @@
 "use client";
+import PageTitle from "@/components/ui/pageTitle";
 
 import { useState } from "react";
 
@@ -29,6 +30,7 @@ export default function TileSettingsPage() {
 
   return (
     <div className="flex flex-col items-left justify-center gap-4 p-8">
+      <PageTitle title="Add members"/>
       <input
         type="text"
         placeholder="p"
