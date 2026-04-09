@@ -6,6 +6,10 @@ const createJestConfig = nextJest({
 
 const customJestConfig = {
     testEnvironment: 'node',
+    testPathIgnorePatterns: [
+        "./node_modules/",
+        "./tests-e2e/"
+    ],
 };
 
 module.exports = createJestConfig(customJestConfig);
