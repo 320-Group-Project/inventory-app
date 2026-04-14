@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 
-export async function DELETE(_request: Request, { params }: { params: { tileId: string } }) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ tileId: string }> }) {
     const supabase = await createClient();
-    const tileId = params.tileId;
+    const { tileId: tileId } = await params; 
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -17,5 +17,4 @@ export async function DELETE(_request: Request, { params }: { params: { tileId: 
     }
 
     return NextResponse.json({ success: true});
-
 }
