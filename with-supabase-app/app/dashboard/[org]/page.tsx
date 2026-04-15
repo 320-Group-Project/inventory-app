@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { ArrowLeft, Plus, Search, Settings } from "lucide-react";
 import Navbar from "@/components/ui/navbar";
 
@@ -26,7 +26,7 @@ const PLACEHOLDER_ROWS: PlaceholderRow[] = [
 /** Example: treat viewer as admin so settings / + show swap for real auth later. */
 const isAdmin = true;
 
-export default function ClubDashboardPage() {
+function ClubDashboardPage() {
   const router = useRouter();
   const params = useParams<{ org: string }>();
   const org = (params?.org ?? "").toString();
@@ -126,5 +126,13 @@ export default function ClubDashboardPage() {
       </div>
     </div>
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense>
+      <ClubDashboardPage />
+    </Suspense>
   );
 }
