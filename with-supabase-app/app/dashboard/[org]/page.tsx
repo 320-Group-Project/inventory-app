@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Plus, Search, Settings } from "lucide-react";
+import Navbar from "@/components/ui/navbar";
 
 type PlaceholderRow = {
   id: string;
@@ -40,6 +41,7 @@ export default function ClubDashboardPage() {
   }, [query]);
 
   return (
+    <><Navbar />
     <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-full rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-md sm:p-6">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -95,35 +97,24 @@ export default function ClubDashboardPage() {
 
         <hr className="my-4 border-border" />
 
-        <div className="flex items-stretch gap-2">
-          <div className="flex min-w-0 flex-1 overflow-hidden rounded-lg bg-neutral-300 text-neutral-900 dark:bg-neutral-600 dark:text-neutral-100">
-            <div className="flex min-w-0 flex-1 items-center px-3 py-3 text-sm font-semibold sm:px-4">
-              Item name
-            </div>
-            <div className="flex shrink-0 items-center px-3 py-3 text-sm font-medium sm:px-4">
-              X/Y Available
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn btn-square btn-ghost shrink-0 self-center border-0 text-base-content"
-            aria-label="List settings"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
-        </div>
-
-        <ul className="mt-3 flex flex-col gap-2">
+        <ul className="flex flex-col gap-2">
           {filtered.map((row) => (
-            <li key={row.id}>
+            <li key={row.id} className="flex items-center gap-2">
               <Link
                 href={`/clubs/category/${encodeURIComponent(row.categoryId)}`}
-                className="flex items-center justify-between rounded-lg bg-base-200 px-3 py-3 transition hover:bg-base-300 sm:px-4"
+                className="flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 px-3 py-3 transition hover:bg-base-300 sm:px-4"
               >
                 <span className="min-w-0 truncate text-sm font-medium">{row.name}</span>
                 <span className="shrink-0 pl-3 text-sm text-muted-foreground">
                   {row.available}/{row.total} Available
                 </span>
+              </Link>
+              <Link
+                href={`/clubs/category/${encodeURIComponent(row.categoryId)}/edit`}
+                className="btn btn-square btn-ghost btn-sm shrink-0 text-base-content"
+                aria-label={`Settings for ${row.name}`}
+              >
+                <Settings className="h-4 w-4" />
               </Link>
             </li>
           ))}
@@ -134,5 +125,6 @@ export default function ClubDashboardPage() {
         ) : null}
       </div>
     </div>
+    </>
   );
 }
