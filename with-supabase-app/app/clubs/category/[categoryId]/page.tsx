@@ -14,15 +14,15 @@ type ItemCopy = {
 };
 
 const PLACEHOLDER_ITEMS: ItemCopy[] = [
-  { id: "1", picture: null, available: true, condition: "Good" },
+  { id: "1", picture: null, available: true, condition: "New" },
   { id: "2", picture: null, available: true, condition: "Fair" },
-  { id: "3", picture: null, available: false, condition: "Poor" },
-  { id: "4", picture: null, available: true, condition: "Good" },
-  { id: "5", picture: null, available: true, condition: "Good" },
+  { id: "3", picture: null, available: false, condition: "Damaged" },
+  { id: "4", picture: null, available: true, condition: "New" },
+  { id: "5", picture: null, available: true, condition: "New" },
   { id: "6", picture: null, available: false, condition: "Fair" },
-  { id: "7", picture: null, available: true, condition: "Good" },
-  { id: "8", picture: null, available: true, condition: "Good" },
-  { id: "9", picture: null, available: false, condition: "Poor" },
+  { id: "7", picture: null, available: true, condition: "New" },
+  { id: "8", picture: null, available: true, condition: "New" },
+  { id: "9", picture: null, available: false, condition: "Damaged" },
   { id: "10", picture: null, available: true, condition: "Fair" },
 ];
 
