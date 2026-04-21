@@ -1,20 +1,32 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+/**
+ * DELETE /api/tiles/[tileId]
+ * Removes the calling user's membership (Role row) from the club identified by tileId.
+ * Used when a non-admin member clicks "Leave club".
+ */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ tileId: string }> },
+) {
+  const supabase = await createClient();
+  const { tileId } = await params;
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ tileId: string }> }) {
-    const supabase = await createClient();
-    const { tileId: tileId } = await params; 
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    const {error: RoleError} = await supabase.from('ROLE').delete().match({ club_id: tileId, name_id: user.id})
-    if (RoleError) {
-        return NextResponse.json({ error: "Could not delete from Role" }, { status: 500 });
-    }
+  const { error } = await supabase
+    .from('Role')
+    .delete()
+    .eq('club_id', tileId)
+    .eq('UID', user.id);
 
-    return NextResponse.json({ success: true});
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }

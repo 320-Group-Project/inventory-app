@@ -1,59 +1,69 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+/**
+ * POST /api/profile/save
+ * Accepts multipart FormData: fname, lname, picture (file, optional).
+ * Updates the User table and optionally uploads a new profile picture.
+ */
 export async function POST(request: Request) {
   const supabase = await createClient();
-  
-  // Verify user
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Parse FormData
   const formData = await request.formData();
-  const fname = formData.get('fname') as string;
-  const lname = formData.get('lname') as string;
+  const fname = formData.get('fname') as string | null;
+  const lname = formData.get('lname') as string | null;
   const pictureFile = formData.get('picture') as File | null;
 
-  let pictureUrl = null;
+  let user_image_url: string | null = null;
 
-  // 1. Upload image to Supabase Storage (if a new file is provided)
+  // Upload picture if provided
   if (pictureFile && pictureFile.size > 0) {
     const fileName = `profile-${user.id}-${Date.now()}`;
-    
-    // NOTE: Replace 'profile_pictures' with your actual Supabase bucket name
+
     const { error: uploadError } = await supabase.storage
-      .from('profile_pictures') 
+      .from('profile_pictures')
       .upload(fileName, pictureFile, { upsert: true });
 
     if (uploadError) {
-      return NextResponse.json({ error: "Image upload failed: " + uploadError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Image upload failed: ' + uploadError.message },
+        { status: 500 },
+      );
     }
-    
-    // Get the public URL for the uploaded image
+
     const { data: { publicUrl } } = supabase.storage
       .from('profile_pictures')
       .getPublicUrl(fileName);
-      
-    pictureUrl = publicUrl;
+
+    user_image_url = publicUrl;
   }
 
-  // 2. Prepare data for the User table update
-  const updateData: { fname?: string; lname?: string; picture?: string } = {};
+  // Build update payload with correct column names
+  const updateData: { fname?: string; lname?: string; user_image_url?: string } = {};
   if (fname) updateData.fname = fname;
   if (lname) updateData.lname = lname;
-  if (pictureUrl) updateData.picture = pictureUrl;
+  if (user_image_url) updateData.user_image_url = user_image_url;
 
-  // 3. Update the User table based on your schema
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ success: true, message: 'Nothing to update' });
+  }
+
   const { error: updateError } = await supabase
     .from('User')
     .update(updateData)
-    .eq('User_id', user.id);
+    .eq('UID', user.id);
 
   if (updateError) {
-    return NextResponse.json({ error: "Database update failed: " + updateError.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Database update failed: ' + updateError.message },
+      { status: 500 },
+    );
   }
 
-  return NextResponse.json({ success: true, picture: pictureUrl });
+  return NextResponse.json({ success: true, user_image_url });
 }

@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const VALID_ROLES = ['Admin', 'Member'];
-
 /**
- * PATCH /api/clubs/[org]/members/[userId]/role
- * Changes a member's role. Only an Admin of the club may do this.
- * Body: { role: "Admin" | "Member" }
+ * DELETE /api/clubs/[org]/members/[userId]
+ * Removes a member from the club. Only an Admin of the club may do this.
+ *
+ * PATCH /api/clubs/[org]/members/[userId]/role is handled in the /role sub-route.
  */
-export async function PATCH(
-  request: Request,
+export async function DELETE(
+  _request: Request,
   { params }: { params: Promise<{ org: string; userId: string }> },
 ) {
   const supabase = await createClient();
@@ -20,7 +19,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Check caller is an Admin
+  // Check caller is an Admin of this club
   const { data: callerRole } = await supabase
     .from('Role')
     .select('role')
@@ -32,19 +31,14 @@ export async function PATCH(
     return NextResponse.json({ error: 'Forbidden — Admins only' }, { status: 403 });
   }
 
-  const body = await request.json();
-  const newRole: string = body.role;
-
-  if (!VALID_ROLES.includes(newRole)) {
-    return NextResponse.json(
-      { error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` },
-      { status: 400 },
-    );
+  // Prevent removing yourself
+  if (userId === user.id) {
+    return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 });
   }
 
   const { error } = await supabase
     .from('Role')
-    .update({ role: newRole })
+    .delete()
     .eq('club_id', org)
     .eq('UID', userId);
 

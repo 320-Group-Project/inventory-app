@@ -1,0 +1,3 @@
+-- Initial schema applied directly to remote Supabase project.
+-- This file is a placeholder so the local migration history matches
+-- the remote supabase_migrations.schema_migrations table.

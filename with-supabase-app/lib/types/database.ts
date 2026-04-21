@@ -20,7 +20,7 @@ export type Database = {
           name: string | null
         }
         Insert: {
-          club_id: number
+          club_id?: number
           name?: string | null
         }
         Update: {
@@ -76,7 +76,7 @@ export type Database = {
         Insert: {
           club_id: number
           description?: string | null
-          item_cat_id: number
+          item_cat_id?: number
           item_cat_image_url?: string | null
           name: string
           quantity: string
@@ -103,23 +103,23 @@ export type Database = {
         Row: {
           club_id: number
           role: string | null
-          UID: string | null
+          UID: string
         }
         Insert: {
           club_id: number
           role?: string | null
-          UID?: string | null
+          UID: string
         }
         Update: {
           club_id?: number
           role?: string | null
-          UID?: string | null
+          UID?: string
         }
         Relationships: [
           {
             foreignKeyName: "Role_club_id_fkey"
             columns: ["club_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "Club"
             referencedColumns: ["club_id"]
           },
