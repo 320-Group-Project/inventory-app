@@ -2,195 +2,200 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import PageTitle from "@/components/ui/pageTitle";
-import { Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
+import { Loader2, Camera } from "lucide-react";
+
+interface ProfileData {
+  fname: string;
+  lname: string;
+  email: string;
+  user_image_url: string | null;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fname, setFname] = useState("");
-  const [lname, setLname] = useState("");
-  const [email, setEmail] = useState("");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  // Load profile on mount
+  const [fname, setFname] = useState("");
+  const [lname, setLname] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   useEffect(() => {
     fetch("/api/profile")
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          router.replace("/auth/login");
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (!data) return;
+        setProfile(data);
         setFname(data.fname ?? "");
         setLname(data.lname ?? "");
-        setEmail(data.email ?? "");
-        setImageUrl(data.user_image_url ?? null);
+        setPreviewUrl(data.user_image_url ?? null);
       })
-      .catch(console.error)
+      .catch(() => setError("Failed to load profile."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPendingFile(file);
+    setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSaving(true);
     setError(null);
-    setSuccessMsg(null);
+    setSuccess(false);
 
     const formData = new FormData();
     formData.append("fname", fname);
     formData.append("lname", lname);
-    if (pendingFile) formData.append("picture", pendingFile);
+    if (selectedFile) formData.append("picture", selectedFile);
 
-    try {
-      const res = await fetch("/api/profile/save", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Save failed");
-        return;
-      }
-      if (data.user_image_url) setImageUrl(data.user_image_url);
-      setPendingFile(null);
-      setSuccessMsg("Profile saved!");
-    } catch {
-      setError("Network error — please try again");
-    } finally {
-      setSaving(false);
+    const res = await fetch("/api/profile/save", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error ?? "Save failed.");
+    } else {
+      setSuccess(true);
+      if (data.user_image_url) setPreviewUrl(data.user_image_url);
+      setSelectedFile(null);
     }
+    setSaving(false);
   };
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
-  };
-
-  const displayImage = previewUrl ?? imageUrl;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-left justify-center gap-4 p-8 bg-base-100 min-h-screen text-base-content">
-      <PageTitle title="Your Profile" />
+    <div className="min-h-screen bg-background px-6 py-10">
+      <div className="mx-auto max-w-lg">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="mb-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← Back
+        </button>
 
-      <hr className="border-t border-secondary" />
+        <h1 className="mb-8 text-4xl font-extrabold tracking-tight text-foreground">
+          Profile
+        </h1>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="card-xl bg-base-100 w-full shadow-lg">
-          <div className="card-body items-left text-left">
-            <div className="flex flex-col md:flex-row gap-8 w-full">
-              {/* Avatar */}
-              <div className="flex flex-col items-center flex-shrink-0">
-                <div className="w-48 h-48 rounded-full bg-base-200 border-8 border-secondary flex items-center justify-center overflow-hidden">
-                  {displayImage ? (
-                    <Image
-                      src={displayImage}
-                      alt="Profile picture"
-                      width={192}
-                      height={192}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="w-full h-full text-secondary translate-y-3 scale-125"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Avatar */}
+          <div className="flex flex-col items-center gap-3">
+            <div
+              className="relative h-28 w-28 cursor-pointer rounded-full bg-muted border border-border overflow-hidden"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewUrl}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-4xl text-muted-foreground">
+                  👤
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <button
-                  type="button"
-                  className="underline mt-2 hover:text-secondary bg-transparent border-none cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {displayImage ? "Change picture" : "Add picture"}
-                </button>
-              </div>
-
-              {/* Inputs */}
-              <div className="flex-1 w-full">
-                <h2 className="card-title font-normal">First Name:</h2>
-                <input
-                  className="input input-bordered border-secondary/50 focus:border-secondary w-full"
-                  placeholder="First Name"
-                  value={fname}
-                  onChange={(e) => setFname(e.target.value)}
-                />
-
-                <h2 className="card-title font-normal mt-4">Last Name:</h2>
-                <input
-                  className="input input-bordered border-secondary/50 focus:border-secondary w-full"
-                  placeholder="Last Name"
-                  value={lname}
-                  onChange={(e) => setLname(e.target.value)}
-                />
-
-                <h2 className="card-title font-normal mt-4">Email:</h2>
-                <input
-                  type="email"
-                  className="input input-bordered border-secondary/50 focus:border-secondary w-full opacity-60 cursor-not-allowed"
-                  value={email}
-                  readOnly
-                  title="Email cannot be changed here"
-                />
-
-                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                {successMsg && <p className="text-green-600 text-sm mt-2">{successMsg}</p>}
-
-                {/* Save and Logout */}
-                <div className="flex gap-4 mt-6">
-                  <button
-                    type="button"
-                    className="btn btn-secondary text-base-100 px-8 flex items-center gap-2"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {saving ? "Saving…" : "Save"}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary text-base-100 px-8"
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </button>
-                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity rounded-full">
+                <Camera className="h-6 w-6 text-white" />
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-sm text-primary hover:underline"
+            >
+              Change photo
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
           </div>
-        </div>
-      )}
+
+          {/* Email (read-only) */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-muted-foreground">
+              Email
+            </label>
+            <input
+              type="email"
+              value={profile?.email ?? ""}
+              readOnly
+              className="input input-bordered w-full bg-muted/40 cursor-not-allowed"
+            />
+          </div>
+
+          {/* First name */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-foreground">
+              First name
+            </label>
+            <input
+              type="text"
+              value={fname}
+              onChange={(e) => setFname(e.target.value)}
+              placeholder="First name"
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          {/* Last name */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-foreground">
+              Last name
+            </label>
+            <input
+              type="text"
+              value={lname}
+              onChange={(e) => setLname(e.target.value)}
+              placeholder="Last name"
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+          {success && (
+            <p className="text-sm text-green-600">Profile saved.</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn btn-primary w-full"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

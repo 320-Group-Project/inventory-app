@@ -134,26 +134,20 @@ export type Database = {
       }
       User: {
         Row: {
-          email: string | null
           fname: string | null
           lname: string | null
-          password: string | null
           UID: string
           user_image_url: string | null
         }
         Insert: {
-          email?: string | null
           fname?: string | null
           lname?: string | null
-          password?: string | null
           UID: string
           user_image_url?: string | null
         }
         Update: {
-          email?: string | null
           fname?: string | null
           lname?: string | null
-          password?: string | null
           UID?: string
           user_image_url?: string | null
         }
