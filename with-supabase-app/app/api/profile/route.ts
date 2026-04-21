@@ -25,4 +25,4 @@ export async function GET() {
     email: user.email ?? '',
     picture: data.picture ?? null,
   });
-}D
+}
