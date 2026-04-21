@@ -32,9 +32,8 @@ export async function POST(request: Request) {
     let user_image_url: string | null = null;
 
     // Upload picture if provided
-    // Upload picture if provided
     if (pictureFile && pictureFile.size > 0) {
-        const fileName = `profile-${user.id}-${Date.now()}`;
+        const fileName = `${user.id}/avatar`;
 
         const { error: uploadError } = await supabase.storage
             .from('profile_pictures')

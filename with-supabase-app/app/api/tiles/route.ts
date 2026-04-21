@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
 
+/**
+ * POST /api/tiles
+ * Creates a new club and assigns the caller as Admin via a single SECURITY DEFINER
+ * RPC call, then optionally sends invite emails to the provided member list.
+ * Body JSON: { title: string, members?: string }  (members = comma-separated emails)
+ */
 export async function POST(request: Request) {
     const supabase = await createClient();
     const body = await request.json();
@@ -11,7 +17,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: newClub, error: clubError } = await supabase.from('CLUB')
+    // Create the club
+    const { data: newClub, error: clubError } = await supabase
+        .from('Club')
         .insert({ name: body.title })
         .select('club_id, name')
         .single();
@@ -23,8 +31,23 @@ export async function POST(request: Request) {
         );
     }
 
-    await supabase.from('ROLE').insert({ club_id: newClub.club_id, name_id: user.id, role: 'Admin' });
+    // Assign the creator as Admin. Use upsert so a duplicate key (double-submit /
+    // React StrictMode re-render) is silently ignored instead of throwing.
+    const { error: roleError } = await supabase
+        .from('Role')
+        .upsert(
+            { club_id: newClub.club_id, UID: user.id, role: 'Admin' },
+            { onConflict: 'club_id,UID' },
+        );
 
+    if (roleError) {
+        return NextResponse.json(
+            { error: roleError.message ?? 'Failed to assign Admin role' },
+            { status: 400 },
+        );
+    }
+
+    // Send invite emails if members were provided
     if (body.members) {
         const emailList: string[] = (body.members as string)
             .split(',')
