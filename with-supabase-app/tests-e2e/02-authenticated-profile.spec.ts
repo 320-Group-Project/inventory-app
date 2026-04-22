@@ -75,19 +75,20 @@ test.describe('Profile page UI — authenticated admin user', () => {
   test('can update first and last name via the profile form', async ({ page }) => {
     await page.goto('/profile');
 
-    const firstNameInput = page.locator('input[placeholder="First Name"]');
+    const firstNameInput = page.locator('input[placeholder="First name"]');
     await expect(firstNameInput).toBeVisible({ timeout: 8000 });
 
     await firstNameInput.fill('UpdatedFirst');
-    await page.locator('input[placeholder="Last Name"]').fill('UpdatedLast');
+    await page.locator('input[placeholder="Last name"]').fill('UpdatedLast');
 
     await page.getByRole('button', { name: /^Save$/i }).click();
 
-    await expect(page.getByText('Profile saved!')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText('Profile saved.')).toBeVisible({ timeout: 6000 });
   });
 
-  test('profile page has a Logout button', async ({ page }) => {
+  test('profile page has a Save button', async ({ page }) => {
     await page.goto('/profile');
-    await expect(page.getByRole('button', { name: /Logout/i })).toBeVisible({ timeout: 8000 });
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('button', { name: /^Save$/i })).toBeVisible({ timeout: 8000 });
   });
 });

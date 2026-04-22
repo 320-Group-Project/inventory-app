@@ -48,3 +48,10 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# ide
+.kiro
+.vscode
+
+# MAC
+.swc

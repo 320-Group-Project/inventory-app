@@ -17,6 +17,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (!body.title || !body.title.trim()) {
+    return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+  }
+
   const { data: newClub, error: clubError } = await supabase
     .rpc('create_club_with_admin', { p_name: body.title, p_uid: user.id });
 

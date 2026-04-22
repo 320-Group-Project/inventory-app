@@ -1,8 +1,14 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import Loader from '@/components/loader';
 
-export default async function SettingsLayout({
+function SettingsFallback() {
+  return <Loader />;
+}
+
+async function SettingsGuard({
   children,
   params,
 }: {
@@ -33,4 +39,18 @@ export default async function SettingsLayout({
   }
 
   return <>{children}</>;
+}
+
+export default function SettingsLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ org: string }>;
+}) {
+  return (
+    <Suspense fallback={<SettingsFallback />}>
+      <SettingsGuard params={params}>{children}</SettingsGuard>
+    </Suspense>
+  );
 }

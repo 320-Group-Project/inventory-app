@@ -68,7 +68,7 @@ test.describe('Dashboard UI — authenticated admin user', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('link', { name: /New Tile/i })).toBeVisible({ timeout: 8000 });
-    await expect(page.getByText('Admin', { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText('Admin', { exact: true }).first()).toBeVisible({ timeout: 8000 });
   });
 
   test('clicking "New Tile" navigates to /dashboard/new-tile', async ({ page }) => {

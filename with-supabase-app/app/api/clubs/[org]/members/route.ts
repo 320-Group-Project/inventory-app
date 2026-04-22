@@ -35,11 +35,13 @@ export async function GET(
   }
 
   // Step 2: fetch User details for those UIDs
+  // NOTE: email was removed from public."User" (migration 20260421000008).
+  // Email lives in auth.users and is not accessible via the anon/user client.
   const uids = roles.map((r) => r.UID).filter(Boolean);
 
   const { data: users, error: userError } = await supabase
     .from('User')
-    .select('UID, fname, lname, email, user_image_url')
+    .select('UID, fname, lname, user_image_url')
     .in('UID', uids);
 
   if (userError) {
@@ -56,7 +58,7 @@ export async function GET(
       role: row.role ?? 'member',
       fname: u?.fname ?? '',
       lname: u?.lname ?? '',
-      email: u?.email ?? '',
+      email: '',
       user_image_url: u?.user_image_url ?? null,
     };
   });

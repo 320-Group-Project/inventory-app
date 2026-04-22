@@ -153,7 +153,7 @@ test.describe('Admin — club settings page UI', () => {
   test('settings page shows the Members section with an + Add Member link', async ({ page }) => {
     await page.goto(`/clubs/${ctx.clubId}/settings`);
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText('Members')).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('heading', { name: 'Members' })).toBeVisible({ timeout: 8000 });
     await expect(page.getByRole('link', { name: /Add Member/i })).toBeVisible({ timeout: 8000 });
   });
 

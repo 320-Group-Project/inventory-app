@@ -48,7 +48,7 @@ export default defineConfig({
     // Logged in as the test Admin user
     {
       name: 'as-admin',
-      testMatch: ['**/02-*.spec.ts', '**/03-*.spec.ts', '**/04-*.spec.ts'],
+      testMatch: ['**/02-*.spec.ts', '**/03-*.spec.ts', '**/04-*.spec.ts', '**/07-*.spec.ts', '**/08-*.spec.ts'],
       use: { ...devices['Desktop Chrome'], storageState: ADMIN_AUTH_FILE },
     },
     // Logged in as the test Member user (Member role in test club)
