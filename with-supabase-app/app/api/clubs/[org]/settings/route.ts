@@ -21,6 +21,18 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Verify the caller is a member of this club (also enforces RLS on Role)
+  const { data: callerRole } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', org)
+    .eq('UID', user.id)
+    .single();
+
+  if (!callerRole) {
+    return NextResponse.json({ error: 'Club not found' }, { status: 404 });
+  }
+
   const { data, error } = await supabase
     .from('Club')
     .select('club_id, name')

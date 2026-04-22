@@ -96,25 +96,14 @@ test.describe('Protected API routes return 401 for unauthenticated requests', ()
 
 // ─── Protected page routes ────────────────────────────────────────────────────
 
-test.describe('Protected page routes render without real data for unauthenticated users', () => {
-  test('/dashboard loads but shows the empty-clubs message', async ({ page }) => {
+test.describe('Protected page routes redirect unauthenticated users', () => {
+  test('/dashboard redirects to /auth/login', async ({ page }) => {
     await page.goto('/dashboard');
-    // Wait for the API call to settle (returns 401 silently; tiles stays empty)
-    await page.waitForLoadState('networkidle');
-    // The "New Tile" FAB is always rendered regardless of auth state
-    await expect(page.getByRole('link', { name: /New Tile/i })).toBeVisible({ timeout: 8000 });
-    // The empty state message should be visible (no tiles were loaded)
-    await expect(
-      page.getByText(/haven't joined any clubs/i),
-    ).toBeVisible({ timeout: 8000 });
+    await expect(page).toHaveURL(/\/auth\/login/, { timeout: 8000 });
   });
 
-  test('/profile loads but the email field is empty (no auth data returned)', async ({ page }) => {
+  test('/profile redirects to /auth/login', async ({ page }) => {
     await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
-    // The email input is rendered once the loading spinner goes away
-    const emailInput = page.locator('input[type="email"]');
-    await expect(emailInput).toBeVisible({ timeout: 8000 });
-    await expect(emailInput).toHaveValue('');
+    await expect(page).toHaveURL(/\/auth\/login/, { timeout: 8000 });
   });
 });
