@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient } from '@/lib/supabase/server';
 
 /**
- * GET /api/clubs/[org]/members
- * Returns all members (and their roles) for the club identified by `org` (club_id).
- *
- * NOTE: Avoids PostgREST Role→User join to prevent RLS recursion 500s.
- * Two separate queries are merged in JS instead.
  * GET /api/clubs/[org]/members
  * Returns all members (and their roles) for the club identified by `org` (club_id).
  *
