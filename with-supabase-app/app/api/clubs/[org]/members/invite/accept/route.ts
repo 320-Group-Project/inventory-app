@@ -17,16 +17,16 @@ export async function GET(
   const clubId = Number(org);
 
   const { data: existing } = await supabase
-    .from('ROLE')
+    .from('Role')
     .select('role')
     .eq('club_id', clubId)
-    .eq('name_id', user.id)
+    .eq('UID', user.id)
     .single();
 
   if (!existing) {
-    await supabase.from('ROLE').insert({
+    await supabase.from('Role').insert({
       club_id: clubId,
-      name_id: user.id,
+      UID: user.id,
       role: 'Member',
     });
   }
