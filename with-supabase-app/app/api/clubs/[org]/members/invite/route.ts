@@ -19,10 +19,10 @@ export async function POST(
   const clubId = Number(org);
 
   const { data: roleData } = await supabase
-    .from('ROLE')
+    .from('Role')
     .select('role')
     .eq('club_id', clubId)
-    .eq('name_id', user.id)
+    .eq('UID', user.id)
     .single();
 
   if (!roleData || roleData.role !== 'Admin') {
@@ -30,7 +30,7 @@ export async function POST(
   }
 
   const { data: club } = await supabase
-    .from('CLUB')
+    .from('Club')
     .select('name')
     .eq('club_id', clubId)
     .single();
