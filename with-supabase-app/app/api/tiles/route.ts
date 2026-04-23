@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: newClub, error: clubError } = await supabase.from('CLUB')
+  const { data: newClub, error: clubError } = await supabase.from('Club')
     .insert({ name: body.title })
     .select('club_id, name')
     .single();
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: clubError?.message || "Failed to create club" }, { status: 400 });
   }
 
-  await supabase.from('ROLE').insert({ club_id: newClub.club_id, name_id: user.id, role: 'Admin' });
+  await supabase.from('Role').insert({ club_id: newClub.club_id, UID: user.id, role: 'Admin' });
 
   if (body.members) {
     const emailList = body.members.split(',')

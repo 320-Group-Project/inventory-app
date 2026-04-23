@@ -11,7 +11,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const {error: RoleError} = await supabase.from('ROLE').delete().match({ club_id: tileId, name_id: user.id})
+    const {error: RoleError} = await supabase.from('ROLE').delete().match({ club_id: tileId, UID: user.id })
     if (RoleError) {
         return NextResponse.json({ error: "Could not delete from Role" }, { status: 500 });
     }
