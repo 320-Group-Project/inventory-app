@@ -23,7 +23,7 @@ export function ProfileForm({
   const [isLoading, setIsLoading] = useState(false);
 
   // Function to handle saving profile
-  const handleSave = async (e: React.InputEvent<HTMLFormElement>) => {
+  const handleSave = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
