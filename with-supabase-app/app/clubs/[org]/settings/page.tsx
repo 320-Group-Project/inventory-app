@@ -17,6 +17,12 @@ export default function TileSettingsPage() {
     { id: 5, name: "", role: "Member" },
   ]);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [clubName, setClubName] = useState("HackUMass");
+  const [savedName, setSavedName] = useState("HackUMass");
+
+  const handleSaveName = () => {
+    setSavedName(clubName);
+  };
 
   const handleRemove = (id: number) => {
     setMembers(members.filter((m) => m.id !== id));
@@ -29,13 +35,22 @@ export default function TileSettingsPage() {
 
   return (
     <div className="flex flex-col items-left justify-center gap-4 p-8">
-      <input
-        type="text"
-        placeholder="p"
-        className="input input-bordered input-primary w-full max-w-xs border-2 border-primary rounded-lg"
-        value="HackUMass"
-        onChange={() => {}}
-      />
+      <div className="flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="Club name"
+          className="input input-bordered input-primary w-full max-w-xs border-2 border-primary rounded-lg"
+          value={clubName}
+          onChange={(e) => setClubName(e.target.value)}
+        />
+        <button
+          className="btn btn-primary rounded-lg px-5 disabled:opacity-40"
+          disabled={clubName.trim() === savedName || clubName.trim() === ""}
+          onClick={handleSaveName}
+        >
+          Save Name
+        </button>
+      </div>
       <hr className="border-t-2 border-gray-300 w-full" />
       <div className="card-body items-left text-left border-2 border-gray-300 rounded-lg p-4">
         <input
