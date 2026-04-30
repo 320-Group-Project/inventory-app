@@ -8,27 +8,41 @@ import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { POST } from "@/app/api/tiles/route";
 
 export function ProfileForm({
-    className,
-    ...props
+  className,
+  ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const router = useRouter();
-  
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Function to handle saving profile
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    setTimeout(() => {
+
+    const response = await fetch('/api/profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fname: firstName, lname: lastName, photo: photo }),
+    } as RequestInit);
+    if (!response.ok) {
       setIsLoading(false);
-      alert("Profile saved!");
-    }, 1000);
+      alert("Failed to save profile: " + (await response.json()).error);
+      return;
+    }
+    else {
+      setIsLoading(false);
+      alert("Profile saved successfully!");
+    }
   };
 
   // Function to handle logging out
@@ -42,7 +56,7 @@ export function ProfileForm({
     <div className={cn("card-xl bg-base-100 w-full shadow-lg", className)} {...props}>
       <div className="card-body items-start text-left p-0">
         <div className="flex flex-col md:flex-row gap-8 w-full">
-          <div className="flex flex-col items-center flex-shrink-0">
+          <div className="flex flex-col items-center shrink-0">
             <div className="w-48 h-48 rounded-full bg-base-200 border-8 border-secondary flex items-center justify-center overflow-hidden">
               <svg
                 viewBox="0 0 24 24"
@@ -56,63 +70,63 @@ export function ProfileForm({
                 />
               </svg>
             </div>
-            <Button 
+            <Button
               variant="link"
-              type="button" 
+              type="button"
               className="mt-4 text-lg text-base-content underline hover:text-secondary h-auto p-0"
             >
               Add picture
             </Button>
           </div>
 
-          <form onSubmit={handleSave} className="flex-1 w-full flex flex-col gap-5">            
+          <form onSubmit={handleSave} className="flex-1 w-full flex flex-col gap-5">
             <div className="grid gap-2">
               <Label className="text-xl font-normal">First Name:</Label>
-              <Input 
+              <Input
                 type="text"
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent" 
-                placeholder="First Name" 
+                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
+                placeholder="First Name"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label className="text-xl font-normal">Last Name:</Label>
-              <Input 
+              <Input
                 type="text"
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent" 
-                placeholder="Last Name" 
+                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
+                placeholder="Last Name"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label className="text-xl font-normal">Email:</Label>
-              <Input 
-                type="email" 
+              <Input
+                type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent" 
-                placeholder="Email" 
+                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
+                placeholder="Email"
               />
             </div>
-            
+
             <div className="flex gap-4 mt-2">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isLoading}
                 className="bg-secondary text-base-100 hover:bg-secondary/90 px-8 h-14 text-lg rounded-xl"
               >
                 {isLoading ? "Saving..." : "Save"}
               </Button>
-              
-              <Button 
-                type="button" 
+
+              <Button
+                type="button"
                 onClick={handleLogout}
                 className="bg-secondary text-base-100 hover:bg-secondary/90 px-8 h-14 text-lg rounded-xl"
               >
