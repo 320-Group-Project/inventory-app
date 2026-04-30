@@ -15,9 +15,9 @@ export async function GET() {
 
   const { data: profile, error } = await supabase
     .from("User")
-    .select("UID, fname, lname, email, user_image_url")
+    .select("UID, fname, lname, user_image_url")
     .eq("UID", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json(
@@ -26,5 +26,29 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ profile });
+  if (profile) {
+    return NextResponse.json({ profile });
+  }
+
+  const newProfile = {
+    UID: user.id,
+    fname: null,
+    lname: null,
+    user_image_url: null,
+  };
+
+  const { data: createdProfile, error: insertError } = await supabase
+    .from("User")
+    .insert(newProfile)
+    .select("UID, fname, lname, user_image_url")
+    .single();
+
+  if (insertError) {
+    return NextResponse.json(
+      { error: "Could not create profile: " + insertError.message },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ profile: createdProfile });
 }

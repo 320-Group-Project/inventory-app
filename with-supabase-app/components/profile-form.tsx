@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { POST } from "@/app/api/tiles/route";
 
 export function ProfileForm({
   className,
@@ -18,8 +17,6 @@ export function ProfileForm({
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(true);
   const [error, setError] = useState("");
@@ -39,8 +36,7 @@ export function ProfileForm({
 
         setFirstName(profile.fname ?? "");
         setLastName(profile.lname ?? "");
-        setEmail(profile.email ?? "");
-      } catch (err) {
+      } catch {
         setError("Could not load profile.");
       } finally {
         setIsFetchingProfile(false);
@@ -56,16 +52,17 @@ export function ProfileForm({
     e.preventDefault();
     setIsLoading(true);
 
-    const response = await fetch('/api/profile', {
+    const response = await fetch('/api/profile/save', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ fname: firstName, lname: lastName, photo: photo }),
+      body: JSON.stringify({ fname: firstName, lname: lastName }),
     } as RequestInit);
     if (!response.ok) {
       setIsLoading(false);
-      alert("Failed to save profile: " + (await response.json()).error);
+      const payload = await response.json().catch(() => ({ error: "Unknown error" }));
+      alert("Failed to save profile: " + payload.error);
       return;
     }
     else {
@@ -82,7 +79,7 @@ export function ProfileForm({
   };
 
   return (
-    <div className={cn("card-xl bg-base-100 w-full shadow-lg", className)} {...props}>
+    <div className={cn("card-xl bg-base-100 w-full shadow-lg py-8", className)} {...props}>
       <div className="card-body items-start text-left p-0">
         <div className="flex flex-col md:flex-row gap-8 w-full">
           <div className="flex flex-col items-center shrink-0">
@@ -133,18 +130,6 @@ export function ProfileForm({
                 onChange={(e) => setLastName(e.target.value)}
                 className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
                 placeholder="Last Name"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label className="text-xl font-normal">Email:</Label>
-              <Input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
-                placeholder="Email"
               />
             </div>
 
