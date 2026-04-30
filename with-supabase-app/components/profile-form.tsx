@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -10,21 +10,50 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 export function ProfileForm({
-    className,
-    ...props
+  className,
+  ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const router = useRouter();
-  
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch current profile data
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const response = await fetch("/api/profile");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch profile");
+        }
+
+        const data = await response.json();
+        const profile = data.profile;
+
+        setFirstName(profile.fname ?? "");
+        setLastName(profile.lname ?? "");
+        setEmail(profile.email ?? "");
+      } catch (err) {
+        setError("Could not load profile.");
+      } finally {
+        setIsFetchingProfile(false);
+      }
+    }
+
+    fetchProfile();
+  }, []);
+
 
   // Function to handle saving profile
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     setTimeout(() => {
       setIsLoading(false);
       alert("Profile saved!");
@@ -56,63 +85,66 @@ export function ProfileForm({
                 />
               </svg>
             </div>
-            <Button 
+            <Button
               variant="link"
-              type="button" 
+              type="button"
               className="mt-4 text-lg text-base-content underline hover:text-secondary h-auto p-0"
             >
               Add picture
             </Button>
           </div>
 
-          <form onSubmit={handleSave} className="flex-1 w-full flex flex-col gap-5">            
+          <form onSubmit={handleSave} className="flex-1 w-full flex flex-col gap-5">
+            {isFetchingProfile && <p>Loading profile...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+
             <div className="grid gap-2">
               <Label className="text-xl font-normal">First Name:</Label>
-              <Input 
+              <Input
                 type="text"
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent" 
-                placeholder="First Name" 
+                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
+                placeholder="First Name"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label className="text-xl font-normal">Last Name:</Label>
-              <Input 
+              <Input
                 type="text"
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent" 
-                placeholder="Last Name" 
+                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
+                placeholder="Last Name"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label className="text-xl font-normal">Email:</Label>
-              <Input 
-                type="email" 
+              <Input
+                type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent" 
-                placeholder="Email" 
+                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
+                placeholder="Email"
               />
             </div>
-            
+
             <div className="flex gap-4 mt-2">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isLoading}
                 className="bg-secondary text-base-100 hover:bg-secondary/90 px-8 h-14 text-lg rounded-xl"
               >
                 {isLoading ? "Saving..." : "Save"}
               </Button>
-              
-              <Button 
-                type="button" 
+
+              <Button
+                type="button"
                 onClick={handleLogout}
                 className="bg-secondary text-base-100 hover:bg-secondary/90 px-8 h-14 text-lg rounded-xl"
               >
