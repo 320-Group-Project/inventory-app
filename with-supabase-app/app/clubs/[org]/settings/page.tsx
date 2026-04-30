@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Navbar from "@/components/ui/navbar";
 
 interface Member {
   id: number;
@@ -34,6 +35,7 @@ export default function TileSettingsPage() {
   };
 
   return (
+    <><Navbar />
     <div className="flex flex-col items-left justify-center gap-4 p-8">
       <div className="flex items-center gap-3">
         <input
@@ -111,6 +113,6 @@ export default function TileSettingsPage() {
           ))}
         </div>
       </div>
-    </div>
+    </div></>
   );
 }
