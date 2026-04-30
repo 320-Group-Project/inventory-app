@@ -1,14 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { POST } from "@/app/api/tiles/route";
 
 export function ProfileForm({
   className,
@@ -18,25 +17,52 @@ export function ProfileForm({
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch current profile data
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const response = await fetch("/api/profile");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch profile");
+        }
+
+        const data = await response.json();
+        const profile = data.profile;
+
+        setFirstName(profile.fname ?? "");
+        setLastName(profile.lname ?? "");
+      } catch {
+        setError("Could not load profile.");
+      } finally {
+        setIsFetchingProfile(false);
+      }
+    }
+
+    fetchProfile();
+  }, []);
+
 
   // Function to handle saving profile
   const handleSave = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const response = await fetch('/api/profile', {
+    const response = await fetch('/api/profile/save', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ fname: firstName, lname: lastName, photo: photo }),
+      body: JSON.stringify({ fname: firstName, lname: lastName }),
     } as RequestInit);
     if (!response.ok) {
       setIsLoading(false);
-      alert("Failed to save profile: " + (await response.json()).error);
+      const payload = await response.json().catch(() => ({ error: "Unknown error" }));
+      alert("Failed to save profile: " + payload.error);
       return;
     }
     else {
@@ -53,7 +79,7 @@ export function ProfileForm({
   };
 
   return (
-    <div className={cn("card-xl bg-base-100 w-full shadow-lg", className)} {...props}>
+    <div className={cn("card-xl bg-base-100 w-full shadow-lg py-8", className)} {...props}>
       <div className="card-body items-start text-left p-0">
         <div className="flex flex-col md:flex-row gap-8 w-full">
           <div className="flex flex-col items-center shrink-0">
@@ -80,6 +106,9 @@ export function ProfileForm({
           </div>
 
           <form onSubmit={handleSave} className="flex-1 w-full flex flex-col gap-5">
+            {isFetchingProfile && <p>Loading profile...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+
             <div className="grid gap-2">
               <Label className="text-xl font-normal">First Name:</Label>
               <Input
@@ -101,18 +130,6 @@ export function ProfileForm({
                 onChange={(e) => setLastName(e.target.value)}
                 className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
                 placeholder="Last Name"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label className="text-xl font-normal">Email:</Label>
-              <Input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
-                placeholder="Email"
               />
             </div>
 
