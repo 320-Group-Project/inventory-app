@@ -7,11 +7,13 @@ import { Counter } from "@/components/Counter";
 import AnnotatedImage from "@/components/ui/annotatedImage";
 import { BigButton } from "@/components/ui/BigButton";
 import { DescriptionBox } from "@/components/ui/DescriptionBox";
+import Navbar from "@/components/ui/navbar";
 
 export default function EditCategoryPage() {
   const router = useRouter();
 
   return (
+    <><Navbar />
     <div className="min-h-screen bg-base-100 text-base-content p-8 md:p-12">
       <div className="max-w-5xl mx-auto">
         <button className="btn btn-ghost btn-circle hover:bg-base-200 mb-2">
@@ -45,6 +47,6 @@ export default function EditCategoryPage() {
           <DescriptionBox />
         </div>
       </div>
-    </div>
+    </div></>
   );
 }
