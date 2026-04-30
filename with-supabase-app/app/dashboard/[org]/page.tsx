@@ -85,10 +85,9 @@ function ClubDashboardPage() {
                 <Settings className="h-5 w-5" />
               </Link>
               <Link
-                href="/clubs/category/new"
+                href={`/clubs/category/new?from=/dashboard/${encodeURIComponent(orgLower)}`}
                 className="btn btn-circle btn-ghost btn-sm text-base-content"
-                aria-label="New category"
-              >
+                aria-label="New category">
                 <Plus className="h-5 w-5" />
               </Link>
             </div>

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { POST } from "@/app/api/tiles/route";
 
 export function ProfileForm({
   className,
@@ -18,6 +19,7 @@ export function ProfileForm({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(true);
   const [error, setError] = useState("");
@@ -50,14 +52,26 @@ export function ProfileForm({
 
 
   // Function to handle saving profile
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
-    setTimeout(() => {
+    const response = await fetch('/api/profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fname: firstName, lname: lastName, photo: photo }),
+    } as RequestInit);
+    if (!response.ok) {
       setIsLoading(false);
-      alert("Profile saved!");
-    }, 1000);
+      alert("Failed to save profile: " + (await response.json()).error);
+      return;
+    }
+    else {
+      setIsLoading(false);
+      alert("Profile saved successfully!");
+    }
   };
 
   // Function to handle logging out
@@ -71,7 +85,7 @@ export function ProfileForm({
     <div className={cn("card-xl bg-base-100 w-full shadow-lg", className)} {...props}>
       <div className="card-body items-start text-left p-0">
         <div className="flex flex-col md:flex-row gap-8 w-full">
-          <div className="flex flex-col items-center flex-shrink-0">
+          <div className="flex flex-col items-center shrink-0">
             <div className="w-48 h-48 rounded-full bg-base-200 border-8 border-secondary flex items-center justify-center overflow-hidden">
               <svg
                 viewBox="0 0 24 24"
