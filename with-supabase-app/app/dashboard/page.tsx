@@ -1,7 +1,7 @@
 /** Has placeholder clubs for now */
 
 "use client";
-
+import Navbar from "@/components/ui/navbar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -27,6 +27,7 @@ export default function Page() {
   }
 
   return (
+    <><Navbar />
     <div className="min-h-screen bg-background px-10 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground">
