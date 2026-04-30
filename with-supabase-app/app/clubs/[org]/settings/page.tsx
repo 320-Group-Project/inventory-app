@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Navbar from "@/components/ui/navbar";
+import Back from "@/components/ui/back";
 
 interface Member {
   id: number;
@@ -9,6 +12,7 @@ interface Member {
 }
 
 export default function TileSettingsPage() {
+  const router = useRouter();
   const [members, setMembers] = useState<Member[]>([
     { id: 1, name: "Jane Doe", role: "Owner" },
     { id: 2, name: "Mickey Mouse", role: "Admin" },
@@ -34,7 +38,12 @@ export default function TileSettingsPage() {
   };
 
   return (
+    <>
+    <Navbar />
     <div className="flex flex-col items-left justify-center gap-4 p-8">
+      <button className="btn btn-ghost btn-circle hover:bg-base-200 self-start" onClick={() => router.back()}>
+        <Back />
+      </button>
       <div className="flex items-center gap-3">
         <input
           type="text"
@@ -112,5 +121,6 @@ export default function TileSettingsPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
