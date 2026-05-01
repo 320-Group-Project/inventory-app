@@ -1,22 +1,50 @@
 "use client";
 
-import { useState } from "react";
-
+import {useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 interface Member {
-  id: number;
+  id: string;
   name: string;
   role: string;
 }
 
 export default function TileSettingsPage() {
-  const [members, setMembers] = useState<Member[]>([
-    { id: 1, name: "Jane Doe", role: "Owner" },
-    { id: 2, name: "Mickey Mouse", role: "Admin" },
-    { id: 3, name: "", role: "Member" },
-    { id: 4, name: "", role: "Member" },
-    { id: 5, name: "", role: "Member" },
-  ]);
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [clubID, setClubID] = useState<number>(15);
+  useEffect(()=>{
+    const fetchData = async () => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+    .from("Role") 
+    .select(`
+      role,
+      User (
+        UID,
+        fname,
+        lname,
+        user_image_url
+      )
+    `)
+    .eq("club_id", clubID);
+      if(data){
+        const formatted = data.map(
+          (item) => {
+            const userData = Array.isArray(item.User) ? item.User[0] : item.User;
+            //const roleData = Array.isArray(item.Role) ? item.Role[0] : item.Role;
+            return{
+              id: userData?.UID || "unknown",
+              name: userData 
+              ? `${userData.fname} ${userData.lname}`.trim() 
+              : "Unknown User",
+              role: item.role || "Member",
+            }
+          });
+        setMembers(formatted)
+      }
+    }
+    fetchData()
+  },[])
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [clubName, setClubName] = useState("HackUMass");
   const [savedName, setSavedName] = useState("HackUMass");
 
@@ -24,12 +52,15 @@ export default function TileSettingsPage() {
     setSavedName(clubName);
   };
 
-  const handleRemove = (id: number) => {
+  const handleRemove = async (id: string) => {
+    const supabase = await createClient();
+    const {error} = await supabase.from("Role").delete().eq("UID", id).select();
+    if(error) throw error
     setMembers(members.filter((m) => m.id !== id));
     setOpenMenu(null);
   };
 
-  const toggleMenu = (id: number) => {
+  const toggleMenu = (id: string) => {
     setOpenMenu((prev) => (prev === id ? null : id));
   };
 
