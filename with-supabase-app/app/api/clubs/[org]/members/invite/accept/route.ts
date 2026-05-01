@@ -2,19 +2,22 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ org: string }> }
 ) {
   const supabase = await createClient();
+  const { org } = await params;
+  const clubId = Number(org);
+  const { origin } = new URL(request.url);
 
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(new URL('/sign-in', 'http://localhost:3000'));
+    const acceptPath = `/api/clubs/${clubId}/members/invite/accept`;
+    return NextResponse.redirect(
+      new URL(`/auth/login?redirectTo=${encodeURIComponent(acceptPath)}`, origin)
+    );
   }
-
-  const { org } = await params;
-  const clubId = Number(org);
 
   const { data: existing } = await supabase
     .from('Role')
@@ -31,5 +34,5 @@ export async function GET(
     });
   }
 
-  return NextResponse.redirect(new URL(`/clubs/${clubId}`, 'http://localhost:3000'));
+  return NextResponse.redirect(new URL(`/dashboard/${clubId}`, origin));
 }
