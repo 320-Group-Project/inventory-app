@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Returns the current user's profile (fname, lname, user_image_url).
 export async function GET() {
   const supabase = await createClient();
 
@@ -11,7 +12,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('User')
-    .select('fname, lname, email, user_image_url')
+    .select('fname, lname, user_image_url')
     .eq('UID', user.id)
     .single();
 
@@ -22,6 +23,7 @@ export async function GET() {
   return NextResponse.json({ profile: data });
 }
 
+// Updates the current user's name and/or profile picture.
 export async function PATCH(request: Request) {
   const supabase = await createClient();
 

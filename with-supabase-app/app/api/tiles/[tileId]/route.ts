@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 
+// Removes the current user's Role row for a club, deleting the dashboard tile.
 export async function DELETE(_request: Request, { params }: { params: Promise<{ tileId: string }> }) {
     const supabase = await createClient();
     const { tileId: tileId } = await params; 

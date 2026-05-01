@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Removes a member from the club by deleting their Role row (Admin or Owner only).
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ org: string; userId: string }> }
@@ -22,7 +23,7 @@ export async function DELETE(
     .eq('UID', user.id)
     .single();
 
-  if (!requesterRole || requesterRole.role !== 'Admin') {
+  if (!requesterRole || !['Admin', 'Owner'].includes(requesterRole.role ?? '')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

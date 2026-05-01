@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Returns all members of a club with their roles, filtered by name search.
 export async function GET(request: Request, { params }: { params: Promise<{ org: string }> }) {
   const supabase = await createClient();
 
@@ -16,12 +17,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
   type MemberRow = {
     role: string | null;
     UID: string | null;
-    User: { fname: string | null; lname: string | null; email: string | null; user_image_url: string | null } | null;
+    User: { fname: string | null; lname: string | null; user_image_url: string | null } | null;
   };
 
   const { data, error } = await supabase
     .from('Role')
-    .select('role, UID, User(fname, lname, email, user_image_url)')
+    .select('role, UID, User(fname, lname, user_image_url)')
     .eq('club_id', parseInt(org)) as { data: MemberRow[] | null; error: { message: string } | null };
 
   if (error) {
@@ -29,7 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
   }
 
   const members = search ? (data ?? []).filter(({ User: u }) => {
-        const full = `${u?.fname ?? ''} ${u?.lname ?? ''} ${u?.email ?? ''}`.toLowerCase();
+        const full = `${u?.fname ?? ''} ${u?.lname ?? ''}`.toLowerCase();
         return full.includes(search);
       }) : (data ?? []);
 

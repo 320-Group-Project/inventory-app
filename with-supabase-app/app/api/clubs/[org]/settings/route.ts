@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Updates the club name and/or bulk changes member roles (Admin or Owner only).
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ org: string }> }
@@ -22,7 +23,7 @@ export async function POST(
     .eq('UID', user.id)
     .single();
 
-  if (!requesterRole || requesterRole.role !== 'Admin') {
+  if (!requesterRole || !['Admin', 'Owner'].includes(requesterRole.role ?? '')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

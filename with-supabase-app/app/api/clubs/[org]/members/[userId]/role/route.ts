@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Updates a member's role between Admin and Member (Admin or Owner only).
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ org: string; userId: string }> }
@@ -22,7 +23,7 @@ export async function PATCH(
     .eq('UID', user.id)
     .single();
 
-  if (!requesterRole || requesterRole.role !== 'Admin') {
+  if (!requesterRole || !['Admin', 'Owner'].includes(requesterRole.role ?? '')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

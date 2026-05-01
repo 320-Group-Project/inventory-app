@@ -1,28 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-async function getAdminClubId(supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>, categoryId: number, userId: string) {
-  const { data: category } = await supabase
-    .from('item_category')
-    .select('club_id')
-    .eq('item_cat_id', categoryId)
-    .single();
-
-  if (!category) return null;
-
-  const { data: role } = await supabase
-    .from('Role')
-    .select('role')
-    .eq('club_id', category.club_id)
-    .eq('UID', userId)
-    .single();
-
-  if (!role || role.role !== 'Admin') return null;
-
-  return category.club_id;
-}
-
-export async function PATCH(request: Request, { params }: { params: Promise<{ categoryId: string }> }) {
+// Updates a category's name, description, quantity, or image (Admin or Owner only).
+export async function PATCH(request: Request, { params }: { params: Promise<{ org: string; categoryId: string }> }) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -30,12 +10,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ca
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { categoryId } = await params;
+  const { org, categoryId } = await params;
+  const clubId = Number(org);
   const catId = Number(categoryId);
 
-  const clubId = await getAdminClubId(supabase, catId, user.id);
-  if (!clubId) {
-    return NextResponse.json({ error: 'Forbidden or category not found' }, { status: 403 });
+  const { data: roleData } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (!roleData || !['Admin', 'Owner'].includes(roleData.role ?? '')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const formData = await request.formData();
@@ -50,7 +37,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ca
     const fileName = `category-${clubId}-${Date.now()}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('category-images')
+      .from('Item Category Pictures')
       .upload(fileName, imageFile, { upsert: true });
 
     if (uploadError) {
@@ -58,7 +45,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ca
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('category-images')
+      .from('Item Category Pictures')
       .getPublicUrl(fileName);
 
     item_cat_image_url = publicUrl;
@@ -82,7 +69,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ca
   return NextResponse.json({ success: true });
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ categoryId: string }> }) {
+// Deletes a category and all its items from the club (Admin or Owner only).
+export async function DELETE(_request: Request, { params }: { params: Promise<{ org: string; categoryId: string }> }) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -90,12 +78,19 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { categoryId } = await params;
+  const { org, categoryId } = await params;
+  const clubId = Number(org);
   const catId = Number(categoryId);
 
-  const clubId = await getAdminClubId(supabase, catId, user.id);
-  if (!clubId) {
-    return NextResponse.json({ error: 'Forbidden or category not found' }, { status: 403 });
+  const { data: roleData } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (!roleData || !['Admin', 'Owner'].includes(roleData.role ?? '')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const { error: itemsError } = await supabase
