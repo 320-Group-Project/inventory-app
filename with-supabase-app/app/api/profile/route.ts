@@ -1,27 +1,57 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// Returns the current user's profile (fname, lname, user_image_url).
+// Returns the current user's profile; auto-creates an empty User row on first load.
 export async function GET() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data, error } = await supabase
+  const { data: profile, error } = await supabase
     .from('User')
-    .select('fname, lname, user_image_url')
+    .select('UID, fname, lname, user_image_url')
     .eq('UID', user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    const status = error.code === 'PGRST116' ? 404 : 500;
-    return NextResponse.json({ error: error.message }, { status });
+    return NextResponse.json(
+      { error: 'Could not fetch profile: ' + error.message },
+      { status: 500 },
+    );
   }
 
-  return NextResponse.json({ profile: data });
+  if (profile) {
+    return NextResponse.json({ profile });
+  }
+
+  const newProfile = {
+    UID: user.id,
+    fname: null,
+    lname: null,
+    user_image_url: null,
+  };
+
+  const { data: createdProfile, error: insertError } = await supabase
+    .from('User')
+    .insert(newProfile)
+    .select('UID, fname, lname, user_image_url')
+    .single();
+
+  if (insertError) {
+    return NextResponse.json(
+      { error: 'Could not create profile: ' + insertError.message },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ profile: createdProfile });
 }
 
 // Updates the current user's name and/or profile picture.

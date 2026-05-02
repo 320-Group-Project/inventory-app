@@ -1,7 +1,7 @@
 /** Has placeholder clubs for now */
 
 "use client";
-
+import Navbar from "@/components/ui/navbar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -17,7 +17,17 @@ export default function Page() {
     [],
   );
   const [tiles, setTiles] = useState(initialTiles);
+  const [leaveTarget, setLeaveTarget] = useState<string | null>(null);
+
+  function confirmLeave() {
+    if (leaveTarget) {
+      setTiles((prev) => prev.filter((x) => x.org !== leaveTarget));
+    }
+    setLeaveTarget(null);
+  }
+
   return (
+    <><Navbar />
     <div className="min-h-screen bg-background px-10 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground">
@@ -62,7 +72,7 @@ export default function Page() {
                   }
 
                   // Placeholder: until membership API exists, remove tile locally.
-                  setTiles((prev) => prev.filter((x) => x.org !== t.org));
+                  setLeaveTarget(t.org);
                 }}
               >
                 {isAdmin ? <Settings className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
@@ -87,6 +97,36 @@ export default function Page() {
         <span className="text-2xl leading-none">+</span>
         <span>New Tile</span>
       </Link>
+
+      {leaveTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card text-card-foreground border border-border rounded-2xl shadow-2xl p-8 w-80 flex flex-col gap-6">
+            <div>
+              <h2 className="text-xl font-bold mb-1">Leave club?</h2>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to leave <span className="font-semibold">{leaveTarget}</span>? You will lose access to this club.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                className="btn btn-sm bg-base-200 text-base-content border border-base-300 hover:bg-base-300"
+                onClick={() => setLeaveTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm bg-red-500 text-white hover:bg-red-600 border-none"
+                onClick={confirmLeave}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   );
 }
