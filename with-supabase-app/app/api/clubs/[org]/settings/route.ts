@@ -14,7 +14,7 @@ export async function POST(
   }
 
   const { org } = await params;
-  const clubId = parseInt(org);
+  const clubId = Number(org);
 
   const { data: requesterRole } = await supabase
     .from('Role')
@@ -45,7 +45,20 @@ export async function POST(
 
   if (roleChanges && roleChanges.length > 0) {
     for (const { userId, role } of roleChanges) {
-      if (!['Admin', 'Member'].includes(role)) continue;
+      if (!['Admin', 'Member'].includes(role)) {
+        return NextResponse.json({ error: `Invalid role: ${role}` }, { status: 400 });
+      }
+
+      const { data: targetRole } = await supabase
+        .from('Role')
+        .select('role')
+        .eq('club_id', clubId)
+        .eq('UID', userId)
+        .single();
+
+      if (targetRole?.role === 'Owner') {
+        return NextResponse.json({ error: "Cannot change the Owner's role" }, { status: 403 });
+      }
 
       const { error } = await supabase
         .from('Role')

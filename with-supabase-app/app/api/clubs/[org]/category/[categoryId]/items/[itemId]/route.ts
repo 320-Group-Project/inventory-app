@@ -10,20 +10,30 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { itemId } = await params;
+  const { org, categoryId, itemId } = await params;
+  const clubId = Number(org);
+
+  const { data: membership } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (!membership) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   const { data, error } = await supabase
     .from('item')
     .select('item_id, name, description, condition, availability, item_image_url, cat_id')
     .eq('item_id', Number(itemId))
+    .eq('cat_id', Number(categoryId))
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (!data) {
-    return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+    const status = error.code === 'PGRST116' ? 404 : 500;
+    return NextResponse.json({ error: error.message }, { status });
   }
 
   return NextResponse.json({ item: data });
@@ -38,7 +48,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { org, itemId } = await params;
+  const { org, categoryId, itemId } = await params;
   const clubId = Number(org);
 
   const { data: roleData } = await supabase
@@ -52,10 +62,22 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const { data: catCheck } = await supabase
+    .from('item_category')
+    .select('item_cat_id')
+    .eq('item_cat_id', Number(categoryId))
+    .eq('club_id', clubId)
+    .single();
+
+  if (!catCheck) {
+    return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+  }
+
   const { error } = await supabase
     .from('item')
     .delete()
-    .eq('item_id', Number(itemId));
+    .eq('item_id', Number(itemId))
+    .eq('cat_id', Number(categoryId));
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -73,7 +95,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { org, itemId } = await params;
+  const { org, categoryId, itemId } = await params;
   const clubId = Number(org);
 
   const { data: roleData } = await supabase
@@ -85,6 +107,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
 
   if (!roleData || !['Admin', 'Owner'].includes(roleData.role ?? '')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { data: catCheck } = await supabase
+    .from('item_category')
+    .select('item_cat_id')
+    .eq('item_cat_id', Number(categoryId))
+    .eq('club_id', clubId)
+    .single();
+
+  if (!catCheck) {
+    return NextResponse.json({ error: 'Item not found' }, { status: 404 });
   }
 
   const formData = await request.formData();
@@ -104,7 +137,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
 
   const updateData: { name?: string; description?: string; condition?: string; availability?: string; item_image_url?: string } = {};
   if (name) updateData.name = name;
-  if (description) updateData.description = description;
+  if (description !== null) updateData.description = description;
   if (condition) updateData.condition = condition;
   if (availability) updateData.availability = availability;
 
@@ -113,7 +146,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
 
     const { error: uploadError } = await supabase.storage
       .from('Item Pictures')
-      .upload(fileName, imageFile, { upsert: true });
+      .upload(fileName, imageFile);
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });
@@ -129,7 +162,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
   const { error } = await supabase
     .from('item')
     .update(updateData)
-    .eq('item_id', Number(itemId));
+    .eq('item_id', Number(itemId))
+    .eq('cat_id', Number(categoryId));
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

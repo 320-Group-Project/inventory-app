@@ -28,11 +28,15 @@ export async function GET(
     .single();
 
   if (!existing) {
-    await supabase.from('Role').insert({
+    const { error: insertError } = await supabase.from('Role').insert({
       club_id: clubId,
       UID: user.id,
       role: 'Member',
     });
+
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
   }
 
   return NextResponse.redirect(new URL(`/dashboard/${clubId}`, origin));

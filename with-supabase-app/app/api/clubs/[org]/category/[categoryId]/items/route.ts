@@ -10,27 +10,36 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { categoryId } = await params;
+  const { org, categoryId } = await params;
+  const clubId = Number(org);
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search')?.toLowerCase() ?? '';
+  const search = searchParams.get('search') ?? '';
 
-  const { data, error } = await supabase
+  const { data: catData } = await supabase
+    .from('item_category')
+    .select('item_cat_id')
+    .eq('item_cat_id', Number(categoryId))
+    .eq('club_id', clubId)
+    .single();
+
+  if (!catData) {
+    return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+  }
+
+  let query = supabase
     .from('item')
     .select('item_id, name, description, condition, availability, item_image_url')
     .eq('cat_id', Number(categoryId));
+
+  if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const items = search
-    ? (data ?? []).filter(i =>
-        i.name?.toLowerCase().includes(search) ||
-        i.description?.toLowerCase().includes(search)
-      )
-    : (data ?? []);
-
-  return NextResponse.json({ items });
+  return NextResponse.json({ items: data ?? [] });
 }
 
 // Creates a new item in a category (Admin or Owner only).
@@ -82,7 +91,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
 
     const { error: uploadError } = await supabase.storage
       .from('Item Pictures')
-      .upload(fileName, imageFile, { upsert: true });
+      .upload(fileName, imageFile);
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });

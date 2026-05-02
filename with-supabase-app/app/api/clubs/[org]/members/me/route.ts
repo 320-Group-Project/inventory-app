@@ -16,6 +16,17 @@ export async function DELETE(
   const { org } = await params;
   const clubId = Number(org);
 
+  const { data: roleData } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (roleData?.role === 'Owner') {
+    return NextResponse.json({ error: 'Club Owner cannot leave — transfer ownership first' }, { status: 403 });
+  }
+
   const { error } = await supabase
     .from('Role')
     .delete()

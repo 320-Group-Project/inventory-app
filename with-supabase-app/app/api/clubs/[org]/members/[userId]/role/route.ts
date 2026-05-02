@@ -14,7 +14,7 @@ export async function PATCH(
   }
 
   const { org, userId } = await params;
-  const clubId = parseInt(org);
+  const clubId = Number(org);
 
   const { data: requesterRole } = await supabase
     .from('Role')
@@ -29,6 +29,17 @@ export async function PATCH(
 
   if (userId === user.id) {
     return NextResponse.json({ error: 'Cannot change your own role' }, { status: 400 });
+  }
+
+  const { data: targetRole } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', userId)
+    .single();
+
+  if (targetRole?.role === 'Owner') {
+    return NextResponse.json({ error: "Cannot change the Owner's role" }, { status: 403 });
   }
 
   const body = await request.json();

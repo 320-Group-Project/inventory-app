@@ -31,6 +31,17 @@ export async function DELETE(
     return NextResponse.json({ error: 'Cannot remove yourself — use the leave club endpoint instead' }, { status: 400 });
   }
 
+  const { data: targetRole } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', userId)
+    .single();
+
+  if (targetRole?.role === 'Owner') {
+    return NextResponse.json({ error: 'Cannot remove the club Owner' }, { status: 403 });
+  }
+
   const { error } = await supabase
     .from('Role')
     .delete()

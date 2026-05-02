@@ -13,22 +13,33 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
   const { org } = await params;
   const clubId = Number(org);
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search')?.toLowerCase() ?? '';
+  const search = searchParams.get('search') ?? '';
 
-  const { data, error } = await supabase
+  const { data: membership } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (!membership) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  let query = supabase
     .from('item_category')
     .select('item_cat_id, name, description, quantity, item_cat_image_url')
     .eq('club_id', clubId);
+
+  if (search) query = query.ilike('name', `%${search}%`);
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const categories = search
-    ? (data ?? []).filter(c => c.name?.toLowerCase().includes(search))
-    : (data ?? []);
-
-  return NextResponse.json({ categories });
+  return NextResponse.json({ categories: data ?? [] });
 }
 
 // Creates a new item category for a club (Admin or Owner only).
@@ -60,8 +71,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
   const quantity = formData.get('quantity') as string | null;
   const imageFile = formData.get('image') as File | null;
 
-  if (!name) {
-    return NextResponse.json({ error: 'name is required' }, { status: 400 });
+  if (!name || !quantity) {
+    return NextResponse.json({ error: 'name and quantity are required' }, { status: 400 });
   }
 
   let item_cat_image_url: string | null = null;
@@ -71,7 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
 
     const { error: uploadError } = await supabase.storage
       .from('Item Category Pictures')
-      .upload(fileName, imageFile, { upsert: true });
+      .upload(fileName, imageFile);
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });

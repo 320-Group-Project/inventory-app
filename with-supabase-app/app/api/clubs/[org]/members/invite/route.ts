@@ -66,7 +66,7 @@ export async function POST(
         variables: {
           Club_Name: club.name,
           Inviter: user.email || 'Unknown User',
-          Club_Link: `http://localhost:3000/api/clubs/${clubId}/members/invite/accept`
+          Club_Link: `${new URL(request.url).origin}/api/clubs/${clubId}/members/invite/accept`
         }
       }
     });

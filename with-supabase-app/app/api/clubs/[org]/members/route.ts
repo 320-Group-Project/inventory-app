@@ -11,8 +11,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
   }
 
   const { org } = await params;
+  const clubId = Number(org);
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search')?.toLowerCase() ?? '';
+
+  const { data: membership } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (!membership) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   type MemberRow = {
     role: string | null;
@@ -23,7 +35,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
   const { data, error } = await supabase
     .from('Role')
     .select('role, UID, User(fname, lname, user_image_url)')
-    .eq('club_id', parseInt(org)) as { data: MemberRow[] | null; error: { message: string } | null };
+    .eq('club_id', clubId) as { data: MemberRow[] | null; error: { message: string } | null };
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

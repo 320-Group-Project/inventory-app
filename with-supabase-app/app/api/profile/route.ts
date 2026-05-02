@@ -17,7 +17,8 @@ export async function GET() {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const status = error.code === 'PGRST116' ? 404 : 500;
+    return NextResponse.json({ error: error.message }, { status });
   }
 
   return NextResponse.json({ profile: data });
@@ -44,7 +45,7 @@ export async function PATCH(request: Request) {
 
     const { error: uploadError } = await supabase.storage
       .from('profile_pictures')
-      .upload(fileName, pictureFile, { upsert: true });
+      .upload(fileName, pictureFile);
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });
@@ -71,5 +72,5 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, user_image_url });
+  return NextResponse.json({ success: true, ...(user_image_url ? { user_image_url } : {}) });
 }

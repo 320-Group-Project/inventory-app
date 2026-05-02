@@ -34,11 +34,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
   let item_cat_image_url: string | undefined;
 
   if (imageFile && imageFile.size > 0) {
-    const fileName = `category-${clubId}-${Date.now()}`;
+    const fileName = `category-${catId}-${Date.now()}`;
 
     const { error: uploadError } = await supabase.storage
       .from('Item Category Pictures')
-      .upload(fileName, imageFile, { upsert: true });
+      .upload(fileName, imageFile);
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });
@@ -53,14 +53,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
 
   const updateData: { name?: string; description?: string; quantity?: string; item_cat_image_url?: string } = {};
   if (name) updateData.name = name;
-  if (description) updateData.description = description;
+  if (description !== null) updateData.description = description;
   if (quantity) updateData.quantity = quantity;
   if (item_cat_image_url) updateData.item_cat_image_url = item_cat_image_url;
 
   const { error } = await supabase
     .from('item_category')
     .update(updateData)
-    .eq('item_cat_id', catId);
+    .eq('item_cat_id', catId)
+    .eq('club_id', clubId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -105,7 +106,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const { error } = await supabase
     .from('item_category')
     .delete()
-    .eq('item_cat_id', catId);
+    .eq('item_cat_id', catId)
+    .eq('club_id', clubId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

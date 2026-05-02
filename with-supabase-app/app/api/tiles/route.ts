@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
 
-// Creates a new club and assigns the current user as Admin, sending invite emails if provided.
+// Creates a new club and assigns the current user as Owner, sending invite emails if provided.
 export async function POST(request: Request) {
   const supabase = await createClient();
   const body = await request.json();
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: clubError?.message || "Failed to create club" }, { status: 400 });
   }
 
-  await supabase.from('Role').insert({ club_id: newClub.club_id, UID: user.id, role: 'Admin' });
+  await supabase.from('Role').insert({ club_id: newClub.club_id, UID: user.id, role: 'Owner' });
 
   if (body.members) {
     const emailList = body.members.split(',')
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
           variables : {
             Club_Name : newClub.name,
             Inviter : user.email || 'Unknown User', 
-            Club_Link : `http://localhost:3000/api/clubs/${newClub.club_id}/members/invite/accept`
+            Club_Link : `${new URL(request.url).origin}/api/clubs/${newClub.club_id}/members/invite/accept`
           }
         }
       });
