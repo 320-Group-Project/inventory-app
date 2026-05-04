@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
 
+// Sends club invite emails to a comma-separated list of addresses (Admin or Owner only).
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ org: string }> }
@@ -25,7 +26,7 @@ export async function POST(
     .eq('UID', user.id)
     .single();
 
-  if (!roleData || roleData.role !== 'Admin') {
+  if (!roleData || !['Admin', 'Owner'].includes(roleData.role ?? '')) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -65,7 +66,7 @@ export async function POST(
         variables: {
           Club_Name: club.name,
           Inviter: user.email || 'Unknown User',
-          Club_Link: `http://localhost:3000/api/clubs/${clubId}/members/invite/accept`
+          Club_Link: `${new URL(request.url).origin}/api/clubs/${clubId}/members/invite/accept`
         }
       }
     });

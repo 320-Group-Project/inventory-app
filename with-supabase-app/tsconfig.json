@@ -30,6 +30,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "test-supa/supa.test.js"  ],
   "exclude": ["node_modules"]
 }

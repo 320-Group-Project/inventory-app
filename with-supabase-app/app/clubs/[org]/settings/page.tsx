@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import PageTitle from "@/components/ui/pageTitle"
 import { useRouter } from "next/navigation";
+import Navbar from "@/components/ui/navbar";
+import Back from "@/components/ui/back";
 
 interface Member {
   id: number;
@@ -10,6 +11,7 @@ interface Member {
   role: string;
 }
 export default function TileSettingsPage() {
+  const router = useRouter();
   const [members, setMembers] = useState<Member[]>([
     { id: 1, name: "Jane Doe", role: "Owner" },
     { id: 2, name: "Mickey Mouse", role: "Admin" },
@@ -18,7 +20,13 @@ export default function TileSettingsPage() {
     { id: 5, name: "", role: "Member" },
   ]);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
-  const router = useRouter();
+  const [clubName, setClubName] = useState("HackUMass");
+  const [savedName, setSavedName] = useState("HackUMass");
+
+  const handleSaveName = () => {
+    setSavedName(clubName);
+  };
+
   const handleRemove = (id: number) => {
     setMembers(members.filter((m) => m.id !== id));
     setOpenMenu(null);
@@ -28,15 +36,28 @@ export default function TileSettingsPage() {
     setOpenMenu((prev) => (prev === id ? null : id));
   };
   return (
+    <>
+    <Navbar />
     <div className="flex flex-col items-left justify-center gap-4 p-8">
-      <PageTitle title="Settings"  onClick={() => router.back()} />
-      <input
-        type="text"
-        placeholder="p"
-        className="input input-bordered input-primary w-full max-w-xs border-2 border-primary rounded-lg"
-        value="HackUMass"
-        onChange={() => {}}
-      />
+      <button className="btn btn-ghost btn-circle hover:bg-base-200 self-start" onClick={() => router.back()}>
+        <Back />
+      </button>
+      <div className="flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="Club name"
+          className="input input-bordered input-primary w-full max-w-xs border-2 border-primary rounded-lg"
+          value={clubName}
+          onChange={(e) => setClubName(e.target.value)}
+        />
+        <button
+          className="btn btn-primary rounded-lg px-5 disabled:opacity-40"
+          disabled={clubName.trim() === savedName || clubName.trim() === ""}
+          onClick={handleSaveName}
+        >
+          Save Name
+        </button>
+      </div>
       <hr className="border-t-2 border-gray-300 w-full" />
       <div className="card-body items-left text-left border-2 border-gray-300 rounded-lg p-4">
         <input
@@ -100,5 +121,6 @@ export default function TileSettingsPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
