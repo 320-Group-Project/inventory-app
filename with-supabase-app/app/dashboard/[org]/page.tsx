@@ -2,45 +2,64 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { Plus, Search, Settings } from "lucide-react";
 import Back from "@/components/ui/back";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/ui/navbar";
 
-type PlaceholderRow = {
-  id: string;
+type Category = {
+  item_cat_id: number;
   name: string;
-  available: number;
-  total: number;
-  categoryId: string;
+  description: string | null;
+  quantity: string;
+  item_cat_image_url: string | null;
+  available_count: number;
+  total_count: number;
 };
-
-const PLACEHOLDER_ROWS: PlaceholderRow[] = [
-  { id: "1", name: "Event banners", available: 6, total: 10, categoryId: "demo-cat-1" },
-  { id: "2", name: "Snacks inventory", available: 4, total: 12, categoryId: "demo-cat-2" },
-  { id: "3", name: "Name tags", available: 18, total: 20, categoryId: "demo-cat-3" },
-  { id: "4", name: "A/V cables", available: 2, total: 8, categoryId: "demo-cat-4" },
-  { id: "5", name: "Tablecloths", available: 0, total: 6, categoryId: "demo-cat-5" },
-  { id: "6", name: "Club merch", available: 11, total: 15, categoryId: "demo-cat-6" },
-];
-
-/** Example: treat viewer as admin so settings / + show swap for real auth later. */
-const isAdmin = true;
 
 function ClubDashboardPage() {
   const router = useRouter();
   const params = useParams<{ org: string }>();
   const org = (params?.org ?? "").toString();
-  const orgLower = org.toLowerCase();
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (!org) return;
+
+    async function load() {
+      try {
+        const [catRes, roleRes] = await Promise.all([
+          fetch(`/api/clubs/${org}/category`),
+          fetch(`/api/clubs/${org}/members/me`),
+        ]);
+
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategories(data.categories ?? []);
+        }
+
+        if (roleRes.ok) {
+          const data = await roleRes.json();
+          setIsAdmin(['Admin', 'Owner'].includes(data.role ?? ''));
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [org]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return PLACEHOLDER_ROWS;
-    return PLACEHOLDER_ROWS.filter((row) => row.name.toLowerCase().includes(q));
-  }, [query]);
+    if (!q) return categories;
+    return categories.filter((c) => c.name.toLowerCase().includes(q));
+  }, [query, categories]);
 
   return (
     <><Navbar />
@@ -56,9 +75,9 @@ function ClubDashboardPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Item name"
+              placeholder="Category name"
               className="w-full rounded-full border-border bg-base-100 pr-10 pl-4 text-sm"
-              aria-label="Search items"
+              aria-label="Search categories"
             />
             <Search
               className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -75,14 +94,14 @@ function ClubDashboardPage() {
                 Admin
               </span>
               <Link
-                href={`/clubs/${encodeURIComponent(orgLower)}/settings`}
+                href={`/clubs/${encodeURIComponent(org)}/settings`}
                 className="btn btn-circle btn-ghost btn-sm text-base-content"
                 aria-label="Club settings"
               >
                 <Settings className="h-5 w-5" />
               </Link>
               <Link
-                href={`/clubs/category/new?from=/dashboard/${encodeURIComponent(orgLower)}`}
+                href={`/clubs/category/new?from=/dashboard/${encodeURIComponent(org)}`}
                 className="btn btn-circle btn-ghost btn-sm text-base-content"
                 aria-label="New category">
                 <Plus className="h-5 w-5" />
@@ -93,32 +112,42 @@ function ClubDashboardPage() {
 
         <hr className="my-4 border-border" />
 
-        <ul className="flex flex-col gap-2">
-          {filtered.map((row) => (
-            <li key={row.id} className="flex items-center gap-2">
-              <Link
-                href={`/clubs/category/${encodeURIComponent(row.categoryId)}`}
-                className="flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 px-3 py-3 transition hover:bg-base-300 sm:px-4"
-              >
-                <span className="min-w-0 truncate text-sm font-medium">{row.name}</span>
-                <span className="shrink-0 pl-3 text-sm text-muted-foreground">
-                  {row.available}/{row.total} Available
-                </span>
-              </Link>
-              <Link
-                href={`/clubs/category/${encodeURIComponent(row.categoryId)}/edit`}
-                className="btn btn-square btn-ghost btn-sm shrink-0 text-base-content"
-                aria-label={`Settings for ${row.name}`}
-              >
-                <Settings className="h-4 w-4" />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {loading ? (
+          <p className="mt-6 text-center text-sm text-muted-foreground">Loading...</p>
+        ) : (
+          <>
+            <ul className="flex flex-col gap-2">
+              {filtered.map((cat) => (
+                <li key={cat.item_cat_id} className="flex items-center gap-2">
+                  <Link
+                    href={`/clubs/category/${cat.item_cat_id}`}
+                    className="flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 px-3 py-3 transition hover:bg-base-300 sm:px-4"
+                  >
+                    <span className="min-w-0 truncate text-sm font-medium">{cat.name}</span>
+                    <span className="shrink-0 pl-3 text-sm text-muted-foreground">
+                      {cat.available_count}/{cat.total_count} Available
+                    </span>
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href={`/clubs/category/${cat.item_cat_id}/edit`}
+                      className="btn btn-square btn-ghost btn-sm shrink-0 text-base-content"
+                      aria-label={`Settings for ${cat.name}`}
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
 
-        {filtered.length === 0 ? (
-          <p className="mt-6 text-center text-sm text-muted-foreground">No items match your search.</p>
-        ) : null}
+            {filtered.length === 0 && (
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                {categories.length === 0 ? "No categories yet." : "No categories match your search."}
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
     </>

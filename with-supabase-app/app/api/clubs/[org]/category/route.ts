@@ -26,20 +26,40 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  let query = supabase
+  let catQuery = supabase
     .from('item_category')
     .select('item_cat_id, name, description, quantity, item_cat_image_url')
     .eq('club_id', clubId);
 
-  if (search) query = query.ilike('name', `%${search}%`);
+  if (search) catQuery = catQuery.ilike('name', `%${search}%`);
 
-  const { data, error } = await query;
+  const { data: categories, error } = await catQuery;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ categories: data ?? [] });
+  const categoryIds = (categories ?? []).map((c) => c.item_cat_id);
+  const { data: items } = await supabase
+    .from('item')
+    .select('cat_id, availability')
+    .in('cat_id', categoryIds);
+
+  const countMap: Record<number, { total: number; available: number }> = {};
+  for (const item of items ?? []) {
+    const id = item.cat_id as number;
+    if (!countMap[id]) countMap[id] = { total: 0, available: 0 };
+    countMap[id].total += 1;
+    if (item.availability === 'Available') countMap[id].available += 1;
+  }
+
+  const result = (categories ?? []).map((cat) => ({
+    ...cat,
+    available_count: countMap[cat.item_cat_id]?.available ?? 0,
+    total_count: countMap[cat.item_cat_id]?.total ?? 0,
+  }));
+
+  return NextResponse.json({ categories: result });
 }
 
 // Creates a new item category for a club (Admin or Owner only).
