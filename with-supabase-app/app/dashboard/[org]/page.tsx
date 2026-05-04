@@ -101,7 +101,7 @@ function ClubDashboardPage() {
                 <Settings className="h-5 w-5" />
               </Link>
               <Link
-                href={`/clubs/category/new?from=/dashboard/${encodeURIComponent(org)}`}
+                href={`/clubs/${encodeURIComponent(org)}/category/new`}
                 className="btn btn-circle btn-ghost btn-sm text-base-content"
                 aria-label="New category">
                 <Plus className="h-5 w-5" />
@@ -120,7 +120,7 @@ function ClubDashboardPage() {
               {filtered.map((cat) => (
                 <li key={cat.item_cat_id} className="flex items-center gap-2">
                   <Link
-                    href={`/clubs/category/${cat.item_cat_id}`}
+                    href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}`}
                     className="flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 px-3 py-3 transition hover:bg-base-300 sm:px-4"
                   >
                     <span className="min-w-0 truncate text-sm font-medium">{cat.name}</span>
@@ -130,7 +130,7 @@ function ClubDashboardPage() {
                   </Link>
                   {isAdmin && (
                     <Link
-                      href={`/clubs/category/${cat.item_cat_id}/edit`}
+                      href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}/edit`}
                       className="btn btn-square btn-ghost btn-sm shrink-0 text-base-content"
                       aria-label={`Settings for ${cat.name}`}
                     >
