@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import PageTitle from "@/components/ui/pageTitle"
+import { useRouter } from "next/navigation";
 
 interface Member {
   id: number;
   name: string;
   role: string;
 }
-
 export default function TileSettingsPage() {
   const [members, setMembers] = useState<Member[]>([
     { id: 1, name: "Jane Doe", role: "Owner" },
@@ -17,7 +18,7 @@ export default function TileSettingsPage() {
     { id: 5, name: "", role: "Member" },
   ]);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
-
+  const router = useRouter();
   const handleRemove = (id: number) => {
     setMembers(members.filter((m) => m.id !== id));
     setOpenMenu(null);
@@ -26,9 +27,9 @@ export default function TileSettingsPage() {
   const toggleMenu = (id: number) => {
     setOpenMenu((prev) => (prev === id ? null : id));
   };
-
   return (
     <div className="flex flex-col items-left justify-center gap-4 p-8">
+      <PageTitle title="Settings"  onClick={() => router.back()} />
       <input
         type="text"
         placeholder="p"
@@ -43,16 +44,18 @@ export default function TileSettingsPage() {
           placeholder="Search..."
           className="input input-bordered w-full border-2 border-gray-300 rounded-lg"
         />
-        <button className="btn btn-primary border-2 border-primary rounded-lg mt-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-          </svg>
-          Add Member
-        </button>
+          <a href="settings/add-members" className="inline-block mt-2">
+            <div className="btn btn-primary border-2 border-primary rounded-lg flex items-center gap-2 cursor-pointer">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+              </svg>
+              Add Member
+            </div>
+          </a>
         <div className="flex flex-col gap-2 mt-4">
           {members.map((member) => (
             <div

@@ -3,14 +3,15 @@ import Back from "./back"
 
 interface PageTitleProps {
   title: string;
-  href?: string
+  href?: string;
+  onClick?: () => void;
 }
 
-const PageTitle = ({title, href}: PageTitleProps) => {
+const PageTitle = ({title, href, onClick}: PageTitleProps) => {
   return (
     <div className="flex gap-4 ml-4">
       {/* Back Button */}
-      <Back href={href}></Back>
+      <Back href={href} onClick={onClick} />
       
       {/* Header */}
       <h1 className="text-3xl font-bold">{title}</h1>
