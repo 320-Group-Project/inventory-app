@@ -71,11 +71,12 @@ export async function PATCH(request: Request) {
   let user_image_url: string | null = null;
 
   if (pictureFile && pictureFile.size > 0) {
-    const fileName = `profile-${user.id}-${Date.now()}`;
+    const fileName = `${user.id}/profile-${Date.now()}`;
 
+    const buffer = Buffer.from(await pictureFile.arrayBuffer());
     const { error: uploadError } = await supabase.storage
       .from('profile_pictures')
-      .upload(fileName, pictureFile);
+      .upload(fileName, buffer, { contentType: pictureFile.type });
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });

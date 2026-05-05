@@ -88,10 +88,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
 
   if (imageFile && imageFile.size > 0) {
     const fileName = `item-${categoryId}-${Date.now()}`;
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
       .from('Item Pictures')
-      .upload(fileName, imageFile);
+      .upload(fileName, buffer, { contentType: imageFile.type });
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });

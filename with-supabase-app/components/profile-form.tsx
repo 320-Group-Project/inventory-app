@@ -1,10 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,6 +18,9 @@ export function ProfileForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(true);
   const [error, setError] = useState("");
+  const [pictureFile, setPictureFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch current profile data
   useEffect(() => {
@@ -36,6 +37,7 @@ export function ProfileForm({
 
         setFirstName(profile.fname ?? "");
         setLastName(profile.lname ?? "");
+        if (profile.user_image_url) setPreviewUrl(profile.user_image_url);
       } catch {
         setError("Could not load profile.");
       } finally {
@@ -47,35 +49,42 @@ export function ProfileForm({
   }, []);
 
 
-  // Function to handle saving profile
-  const handleSave = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    setPictureFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const response = await fetch('/api/profile/save', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ fname: firstName, lname: lastName }),
-    } as RequestInit);
+    const formData = new FormData();
+    formData.append("fname", firstName);
+    formData.append("lname", lastName);
+    if (pictureFile) formData.append("picture", pictureFile);
+
+    const response = await fetch('/api/profile', {
+      method: 'PATCH',
+      body: formData,
+    });
+
+    setIsLoading(false);
+
     if (!response.ok) {
-      setIsLoading(false);
       const payload = await response.json().catch(() => ({ error: "Unknown error" }));
       alert("Failed to save profile: " + payload.error);
       return;
     }
-    else {
-      setIsLoading(false);
-      alert("Profile saved successfully!");
-    }
+
+    alert("Profile saved successfully!");
   };
 
   // Function to handle logging out
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login"); // Redirect back to login
+    await fetch("/auth/logout", { method: "POST" });
+    router.push("/auth/login");
   };
 
   return (
@@ -83,25 +92,42 @@ export function ProfileForm({
       <div className="card-body items-start text-left p-0">
         <div className="flex flex-col md:flex-row gap-8 w-full">
           <div className="flex flex-col items-center shrink-0">
-            <div className="w-48 h-48 rounded-full bg-base-200 border-8 border-secondary flex items-center justify-center overflow-hidden">
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-full h-full text-secondary translate-y-3 scale-125"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-48 h-48 rounded-full bg-base-200 border-8 border-secondary flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity"
+              aria-label="Upload profile picture"
+            >
+              {previewUrl ? (
+                <img src={previewUrl} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-full h-full text-secondary translate-y-3 scale-125"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </button>
             <Button
               variant="link"
               type="button"
+              onClick={() => fileInputRef.current?.click()}
               className="mt-4 text-lg text-base-content underline hover:text-secondary h-auto p-0"
             >
-              Add picture
+              {previewUrl ? "Change picture" : "Add picture"}
             </Button>
           </div>
 
