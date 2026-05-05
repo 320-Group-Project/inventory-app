@@ -10,7 +10,6 @@ interface Member {
   name: string;
   role: string;
 }
-
 export default function TileSettingsPage() {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>([
@@ -36,7 +35,6 @@ export default function TileSettingsPage() {
   const toggleMenu = (id: number) => {
     setOpenMenu((prev) => (prev === id ? null : id));
   };
-
   return (
     <>
     <Navbar />
@@ -67,16 +65,18 @@ export default function TileSettingsPage() {
           placeholder="Search..."
           className="input input-bordered w-full border-2 border-gray-300 rounded-lg"
         />
-        <button className="btn btn-primary border-2 border-primary rounded-lg mt-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-          </svg>
-          Add Member
-        </button>
+          <a href="settings/add-members" className="inline-block mt-2">
+            <div className="btn btn-primary border-2 border-primary rounded-lg flex items-center gap-2 cursor-pointer">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+              </svg>
+              Add Member
+            </div>
+          </a>
         <div className="flex flex-col gap-2 mt-4">
           {members.map((member) => (
             <div
