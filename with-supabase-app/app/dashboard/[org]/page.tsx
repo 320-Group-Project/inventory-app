@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState, Suspense } from "react";
-import { ArrowLeft, Plus, Search, Settings } from "lucide-react";
+import { Plus, Search, Settings } from "lucide-react";
+import Back from "@/components/ui/back";
+import { Input } from "@/components/ui/input";
 import Navbar from "@/components/ui/navbar";
 
 type PlaceholderRow = {
@@ -45,22 +47,17 @@ function ClubDashboardPage() {
     <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-full rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-md sm:p-6">
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            className="btn btn-circle btn-ghost btn-sm shrink-0 text-base-content"
-            aria-label="Back"
-            onClick={() => router.push("/dashboard")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <div className="shrink-0 -ml-2">
+            <Back onClick={() => router.push("/dashboard")} />
+          </div>
 
           <div className="relative min-w-0 flex-1">
-            <input
+            <Input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Item name"
-              className="input input-bordered w-full rounded-full border-border bg-base-100 pr-10 pl-4 text-sm"
+              className="w-full rounded-full border-border bg-base-100 pr-10 pl-4 text-sm"
               aria-label="Search items"
             />
             <Search

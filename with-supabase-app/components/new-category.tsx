@@ -3,8 +3,8 @@
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
-import { ItemNameInput } from "./ItemNameInput";
-import { Counter } from "./Counter";
+import { ItemNameInput } from "./ui/ItemNameInput";
+import { Counter } from "./ui/Counter";
 import AnnotatedImage from "./ui/annotatedImage";
 import { BigButton } from "./ui/BigButton";
 import { DescriptionBox } from "./ui/DescriptionBox";
