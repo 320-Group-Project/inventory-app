@@ -22,7 +22,7 @@ export async function GET() {
 
   const tiles = (data ?? []).map((row) => ({
     club_id: row.club_id,
-    name: (row.Club as { name: string | null } | null)?.name ?? String(row.club_id),
+    name: ((row.Club as unknown) as { name: string | null } | null)?.name ?? String(row.club_id),
     role: row.role as string,
   }));
 
