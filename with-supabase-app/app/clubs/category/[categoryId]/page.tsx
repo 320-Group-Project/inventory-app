@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState, Suspense } from "react";
-import { ArrowLeft, Plus, Search, Settings, X } from "lucide-react";
+import { Plus, Search, Settings } from "lucide-react";
+import Back from "@/components/ui/back";
 import Navbar from "@/components/ui/navbar";
 
 type ItemCopy = {
@@ -11,27 +13,20 @@ type ItemCopy = {
   picture: string | null;
   available: boolean;
   condition: string;
-  description: string;
 };
 
 const PLACEHOLDER_ITEMS: ItemCopy[] = [
-  { id: "1", picture: null, available: true,  condition: "New",     description: "Brand new item, never used. Comes in original packaging." },
-  { id: "2", picture: null, available: true,  condition: "Fair",    description: "Lightly used with minor signs of wear. Fully functional." },
-  { id: "3", picture: null, available: false, condition: "Damaged", description: "Item has visible damage. May require repair before use." },
-  { id: "4", picture: null, available: true,  condition: "New",     description: "Brand new item, never used. Comes in original packaging." },
-  { id: "5", picture: null, available: true,  condition: "New",     description: "Brand new item, never used. Comes in original packaging." },
-  { id: "6", picture: null, available: false, condition: "Fair",    description: "Lightly used with minor signs of wear. Fully functional." },
-  { id: "7", picture: null, available: true,  condition: "New",     description: "Brand new item, never used. Comes in original packaging." },
-  { id: "8", picture: null, available: true,  condition: "New",     description: "Brand new item, never used. Comes in original packaging." },
-  { id: "9", picture: null, available: false, condition: "Damaged", description: "Item has visible damage. May require repair before use." },
-  { id: "10", picture: null, available: true, condition: "Fair",    description: "Lightly used with minor signs of wear. Fully functional." },
+  { id: "1", picture: null, available: true, condition: "New" },
+  { id: "2", picture: null, available: true, condition: "Fair" },
+  { id: "3", picture: null, available: false, condition: "Damaged" },
+  { id: "4", picture: null, available: true, condition: "New" },
+  { id: "5", picture: null, available: true, condition: "New" },
+  { id: "6", picture: null, available: false, condition: "Fair" },
+  { id: "7", picture: null, available: true, condition: "New" },
+  { id: "8", picture: null, available: true, condition: "New" },
+  { id: "9", picture: null, available: false, condition: "Damaged" },
+  { id: "10", picture: null, available: true, condition: "Fair" },
 ];
-
-const conditionColor: Record<string, string> = {
-  New:     "text-emerald-500",
-  Fair:    "text-amber-500",
-  Damaged: "text-red-500",
-};
 
 const isAdmin = true;
 
@@ -41,7 +36,6 @@ function CategoryPage() {
   const categoryId = (params?.categoryId ?? "").toString();
 
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<ItemCopy | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -59,22 +53,17 @@ function CategoryPage() {
 
           {/* Top bar */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              className="btn btn-circle btn-ghost btn-sm shrink-0 text-base-content"
-              aria-label="Back"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
+            <div className="shrink-0 -ml-2">
+              <Back onClick={() => router.back()} />
+            </div>
 
             <div className="relative min-w-0 flex-1">
-              <input
+              <Input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Item name"
-                className="input input-bordered w-full rounded-full border-border bg-base-100 pr-10 pl-4 text-sm"
+                className="w-full rounded-full border-border bg-base-100 pr-10 pl-4 text-sm"
                 aria-label="Search items"
               />
               <Search
@@ -113,10 +102,9 @@ function CategoryPage() {
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {filtered.map((item) => (
                 <li key={item.id} className="group relative">
-                  <button
-                    type="button"
-                    className="block w-full overflow-hidden rounded-xl bg-base-200 text-left transition hover:bg-base-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    onClick={() => setSelected(item)}
+                  <Link
+                    href={`/clubs/category/${encodeURIComponent(categoryId)}/item/${encodeURIComponent(item.id)}`}
+                    className="block overflow-hidden rounded-xl bg-base-200 transition hover:bg-base-300"
                   >
                     {/* Picture area */}
                     <div className="relative aspect-[3/4] w-full bg-neutral-300 dark:bg-neutral-600">
@@ -136,9 +124,9 @@ function CategoryPage() {
                       </p>
                       <p className="text-muted-foreground">{item.condition}</p>
                     </div>
-                  </button>
+                  </Link>
 
-                  {/* Gear — shown on hover */}
+                  {/* Gear — shown on hover (always visible on touch devices) */}
                   <Link
                     href={`/clubs/category/${encodeURIComponent(categoryId)}/item/${encodeURIComponent(item.id)}/edit`}
                     className="absolute bottom-1 right-1 rounded-full p-1 text-base-content opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
@@ -153,72 +141,6 @@ function CategoryPage() {
           )}
         </div>
       </div>
-
-      {/* Item detail popup */}
-      {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setSelected(null)}
-        >
-          <div
-            className="relative w-full max-w-3xl rounded-2xl bg-card text-card-foreground border border-border shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close */}
-            <button
-              type="button"
-              className="absolute right-4 top-4 z-10 btn btn-circle btn-ghost btn-sm"
-              aria-label="Close"
-              onClick={() => setSelected(null)}
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* Description (left) + Image (right) */}
-            <div className="flex flex-col sm:flex-row min-h-80">
-              <div className="flex flex-1 flex-col justify-between p-8">
-                <div>
-                  <h2 className="mb-4 text-2xl font-bold">Item #{selected.id}</h2>
-                  <p className="text-base text-muted-foreground leading-relaxed">
-                    {selected.description}
-                  </p>
-                </div>
-                <div className="mt-8">
-                  <span
-                    className={`inline-block rounded-full border px-4 py-1.5 text-sm font-semibold ${
-                      selected.available
-                        ? "border-emerald-400 text-emerald-500"
-                        : "border-muted-foreground text-muted-foreground"
-                    }`}
-                  >
-                    {selected.available ? "Available" : "Unavailable"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="w-full sm:w-64 shrink-0 aspect-[3/4] bg-neutral-300 dark:bg-neutral-600">
-                {selected.picture ? (
-                  <img
-                    src={selected.picture}
-                    alt={`Item ${selected.id}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : null}
-              </div>
-            </div>
-
-            {/* Condition at bottom */}
-            <div className="border-t border-border px-8 py-4 flex items-center gap-3">
-              <span className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
-                Condition
-              </span>
-              <span className={`text-base font-semibold ${conditionColor[selected.condition] ?? "text-base-content"}`}>
-                {selected.condition}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
