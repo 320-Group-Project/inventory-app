@@ -163,6 +163,7 @@ All routes are fully implemented.
 ### Tiles / Club Creation
 | Method | Path | File | Status |
 |---|---|---|---|
+| GET | `/api/tiles` | `app/api/tiles/route.ts` | ✅ Done — returns all clubs for current user with role |
 | POST | `/api/tiles` | `app/api/tiles/route.ts` | ✅ Done |
 
 ### Clubs & Members
@@ -193,6 +194,11 @@ All routes are fully implemented.
 | GET | `/api/clubs/:org/category/:categoryId/items/:itemId` | `app/api/clubs/[org]/category/[categoryId]/items/[itemId]/route.ts` | ✅ Done |
 | PATCH | `/api/clubs/:org/category/:categoryId/items/:itemId` | `app/api/clubs/[org]/category/[categoryId]/items/[itemId]/route.ts` | ✅ Done |
 | DELETE | `/api/clubs/:org/category/:categoryId/items/:itemId` | `app/api/clubs/[org]/category/[categoryId]/items/[itemId]/route.ts` | ✅ Done |
+
+## Frontend Wiring TODOs
+
+### Not yet wired to real data
+- All major pages are now wired. No known remaining stubs.
 
 ## Route Implementation Notes
 

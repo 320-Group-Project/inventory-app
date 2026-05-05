@@ -1,6 +1,39 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Returns the club name (any member).
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ org: string }> }
+) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { org } = await params;
+  const clubId = Number(org);
+
+  const { data: membership } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const { data: club, error } = await supabase
+    .from('Club')
+    .select('name')
+    .eq('club_id', clubId)
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ name: club.name, role: membership.role });
+}
+
 // Updates the club name and/or bulk changes member roles (Admin or Owner only).
 export async function POST(
   request: Request,

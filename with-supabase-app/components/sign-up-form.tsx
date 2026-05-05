@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export function SignUpForm({
@@ -26,12 +26,20 @@ export function SignUpForm({
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         const supabase = createClient();
         setIsLoading(true);
         setError(null);
+
+        if (!email.toLowerCase().endsWith("@umass.edu")) {
+            setError("You must use a UMass email address (@umass.edu) to sign up.");
+            setIsLoading(false);
+            return;
+        }
 
         if (password !== repeatPassword) {
             setError("Passwords do not match");
@@ -48,7 +56,7 @@ export function SignUpForm({
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/dashboard`,
+                    emailRedirectTo: `${window.location.origin}${redirectTo}`,
                 },
             });
             if (error) throw error;

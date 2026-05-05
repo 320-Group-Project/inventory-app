@@ -99,10 +99,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
 
   if (imageFile && imageFile.size > 0) {
     const fileName = `category-${clubId}-${Date.now()}`;
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
       .from('Item Category Pictures')
-      .upload(fileName, imageFile);
+      .upload(fileName, buffer, { contentType: imageFile.type });
 
     if (uploadError) {
       return NextResponse.json({ error: 'Image upload failed: ' + uploadError.message }, { status: 500 });

@@ -55,6 +55,14 @@ export async function POST(
     return NextResponse.json({ error: "No valid emails provided" }, { status: 400 });
   }
 
+  const nonUmass = emailList.filter((e) => !e.toLowerCase().endsWith("@umass.edu"));
+  if (nonUmass.length > 0) {
+    return NextResponse.json(
+      { error: `Only @umass.edu addresses can be invited: ${nonUmass.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   for (const email of emailList) {

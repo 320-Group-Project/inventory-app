@@ -39,5 +39,5 @@ export async function GET(
     }
   }
 
-  return NextResponse.redirect(new URL(`/dashboard/${clubId}`, origin));
+  return NextResponse.redirect(new URL(`/dashboard`, origin));
 }
