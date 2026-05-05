@@ -38,7 +38,11 @@ export function SignUpForm({
             setIsLoading(false);
             return;
         }
-
+        if (!email.trim().toLowerCase().endsWith('@umass.edu')) {
+            setError("Only UMass email addresses (@umass.edu) are allowed.");
+            setIsLoading(false);
+            return;
+          }
         try {
             const { error } = await supabase.auth.signUp({
                 email,
@@ -71,7 +75,7 @@ export function SignUpForm({
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="m@example.com"
+                                    placeholder="xyz@umass.edu"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
