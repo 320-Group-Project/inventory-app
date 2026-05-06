@@ -108,8 +108,9 @@ export function NewItemForm({
                     type="radio"
                     name="condition"
                     id={`cond-${c}`}
+                    value={c}
                     checked={condition === c}
-                    onChange={() => setCondition(c)}
+                    onChange={(e) => setCondition(e.target.value as Condition)}
                     className="radio radio-secondary border-2 border-secondary checked:bg-secondary w-6 h-6"
                   />
                   <Label htmlFor={`cond-${c}`} className="text-xl font-normal cursor-pointer">
@@ -130,8 +131,9 @@ export function NewItemForm({
                     type="radio"
                     name="availability"
                     id={`avail-${a}`}
+                    value={a}
                     checked={availability === a}
-                    onChange={() => setAvailability(a)}
+                    onChange={(e) => setAvailability(e.target.value as Availability)}
                     className="radio radio-secondary border-2 border-secondary checked:bg-secondary w-6 h-6"
                   />
                   <Label htmlFor={`avail-${a}`} className="text-xl font-normal cursor-pointer">
