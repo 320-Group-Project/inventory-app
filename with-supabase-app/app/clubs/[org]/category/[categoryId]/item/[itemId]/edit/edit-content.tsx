@@ -163,7 +163,6 @@ export function EditItemContent() {
                     <label key={c} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        name="condition"
                         value={c}
                         checked={condition === c}
                         onChange={(e) => setCondition(e.target.value as Condition)}
@@ -182,7 +181,6 @@ export function EditItemContent() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="availability"
                       value="Available"
                       checked={available}
                       onChange={(e) => setAvailable(e.target.value === "Available")}
@@ -193,7 +191,6 @@ export function EditItemContent() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="availability"
                       value="Checked Out"
                       checked={!available}
                       onChange={(e) => setAvailable(e.target.value === "Available")}
