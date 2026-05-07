@@ -41,12 +41,12 @@ Auth is Supabase SSR (session in cookies). Get the current user with `supabase.a
 | `Club` | `club_id`, `name` | |
 | `Role` | `club_id`, `UID`, `role` | Join table; role is `'Owner'`, `'Admin'`, or `'Member'`. Owner has all Admin permissions. |
 | `item_category` | `item_cat_id`, `club_id`, `name`, `description`, `quantity`, `item_cat_image_url` | `quantity` is a varchar string set manually, not a computed count |
-| `item` | `item_id`, `cat_id`, `name`, `description`, `condition`, `availability`, `item_image_url` | `condition` and `availability` are USER-DEFINED enum types. **Known issue:** PostgREST schema cache sometimes drops these columns — fix by running `NOTIFY pgrst, 'reload schema';` in the SQL editor. Permanent fix: convert to varchar with CHECK constraint. |
+| `item` | `item_id`, `cat_id`, `name`, `description`, `condition`, `availability`, `item_image_url` | `condition` is enum stored as `"1"\|"2"\|"3"` (Damaged=`"1"`, Fair=`"2"`, New=`"3"`). `availability` is `boolean` (true=Available, false=Checked Out). The API translates labels ↔ storage at the boundary so the frontend always uses human labels — see [Items: Label/Code Translation](#items-labelcode-translation). |
 
 **Critical:** The `Role` table is both the membership list and the source of dashboard tiles. A user's tiles are all their `Role` rows. Deleting a `Role` row removes both club membership and the dashboard tile simultaneously — so the dashboard tile-remove button and the "leave club" button both call the same endpoint: `DELETE /api/clubs/:org/members/me`.
 
 **Owner rules:**
-- Whoever creates a club via `POST /api/tiles` is automatically inserted as the `'Owner'`.
+- Whoever creates a club via `POST /api/tiles` is automatically inserted as the `'Owner'`. **This is done by the Postgres trigger `on_club_created` → `add_owner_on_club_create()`** (defined in `supabase/migrations/20260411004213_remote_schema.sql`). It runs `AFTER INSERT ON Club` and inserts a `Role` row for `auth.uid()` with `role = 'Owner'`. **Do not insert the Role row from the application** — you'll hit a `Role_pkey` duplicate-key error.
 - Each club has exactly one Owner. Owner cannot be demoted, removed, or leave the club; ownership transfer is not yet implemented.
 - Owner protections are enforced in `members/me`, `members/[userId]`, `members/[userId]/role`, and `settings` routes.
 
@@ -86,8 +86,8 @@ CREATE TABLE public.item_category (
 CREATE TABLE public.item (
   item_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   name character varying,
-  condition USER-DEFINED,  -- enum: 'New', 'Fair', 'Damaged'
-  availability USER-DEFINED,  -- enum: 'Available', 'Checked Out'
+  condition USER-DEFINED,  -- enum "1"|"2"|"3": Damaged="1", Fair="2", New="3"
+  availability boolean,    -- true = Available, false = Checked Out
   description text,
   cat_id numeric,
   item_image_url text,
@@ -146,6 +146,22 @@ These must exist or features will break:
 | `profile_pictures` | INSERT | `(auth.uid())::text = (storage.foldername(name))[1]` |
 | `profile_pictures` | UPDATE | `(auth.uid())::text = (storage.foldername(name))[1]` |
 
+### Items: Label/Code Translation
+
+The DB stores `item.condition` as enum `"1"|"2"|"3"` and `item.availability` as boolean, but the frontend works in human labels (`"New"`, `"Fair"`, `"Damaged"`, `"Available"`, `"Checked Out"`). Translation happens at the API boundary, so client code never deals with the codes.
+
+Both items routes (`items/route.ts` and `items/[itemId]/route.ts`) define two small constants at the top:
+```ts
+const CONDITION_LABEL: Record<string, string> = { '1': 'Damaged', '2': 'Fair', '3': 'New' };
+const CONDITION_CODE:  Record<string, string> = { Damaged: '1', Fair: '2', New: '3' };
+```
+
+- **Forward (label → storage)** on POST and PATCH: `condition: CONDITION_CODE[condition]`, `availability: availability === 'Available'`.
+- **Reverse (storage → label)** on GET: `condition: CONDITION_LABEL[row.condition]`, `availability: row.availability ? 'Available' : 'Checked Out'`.
+- **`available_count`** in `GET /api/clubs/:org/category` compares `availability === true` (boolean) — not the string label.
+
+If you ever change the DB representation, update both maps in both routes and the boolean comparison in the category route.
+
 ### Email Invites
 
 Invites are sent via Resend (`resend` package) using the `'club-invites'` template id (with template variables `Club_Name`, `Inviter`, `Club_Link`). All invited emails must end in `@umass.edu` — enforced in both invite routes.
@@ -193,6 +209,8 @@ const clubId = Number(org);  // org is always a numeric club_id
 ### Clubs & Members
 | Method | Path | File | Status |
 |---|---|---|---|
+| DELETE | `/api/clubs/:org` | `app/api/clubs/[org]/route.ts` | ✅ Done — Owner only; cascade-deletes items → categories → roles → club. Body must include `{ confirmation: <club name> }` matching the current name. |
+| POST | `/api/clubs/:org/transfer-ownership` | `app/api/clubs/[org]/transfer-ownership/route.ts` | ✅ Done — Owner only. Body `{ userId }`. Target must currently be Admin. Promotes target to Owner first, then demotes the previous Owner to Admin (the previous Owner stays in the club). Order is intentional: promote-then-demote leaves recoverable state (two Owners) if step 2 fails, vs. demote-first which would leave no Owner. |
 | GET | `/api/clubs/:org/members?search=` | `app/api/clubs/[org]/members/route.ts` | ✅ Done |
 | POST | `/api/clubs/:org/members/invite` | `app/api/clubs/[org]/members/invite/route.ts` | ✅ Done |
 | GET | `/api/clubs/:org/members/invite/accept` | `app/api/clubs/[org]/members/invite/accept/route.ts` | ✅ Done |
@@ -222,6 +240,28 @@ const clubId = Number(org);  // org is always a numeric club_id
 
 ---
 
+## Frontend Conventions
+
+**Suspense boundary required for client-page param reads.** Pages that read `useParams<{...}>()` from a client component (or that import a client component which does) must be wrapped in `<Suspense>` at the server-component level. Without it, Next 16 emits the "blocking-route" warning and delays render. The pattern is: `page.tsx` is a small server component that returns `<Suspense><ClientComponent/></Suspense>`; the interactive logic lives in a sibling client file. See `app/clubs/[org]/category/[categoryId]/item/new/page.tsx` (wraps `components/new-item-form.tsx`) and `app/clubs/[org]/category/[categoryId]/item/[itemId]/edit/page.tsx` (wraps `edit/edit-content.tsx`) for examples.
+
+**Uncontrolled UI stubs.** `components/ItemNameInput.tsx`, `components/Counter.tsx`, `components/ui/DescriptionBox.tsx`, `components/ui/BigButton.tsx`, and `components/ui/annotatedImage.tsx` manage their own internal state (or take no value props) and aren't wired to any API. They were used by the original edit-page UI stubs. When wiring an edit page, **prefer building controlled inputs in-place** rather than refactoring these sub-components — the existing `components/new-item-form.tsx`, `components/new-category.tsx`, and `app/clubs/[org]/category/[categoryId]/item/[itemId]/edit/edit-content.tsx` are the working pattern.
+
+**Radio onChange — read from the event target, not the closure.** Use `onChange={(e) => setX(e.target.value as ...)}` rather than `onChange={() => setX(value)}`. The closure form causes a visible "filled-dot disappears" flicker during DaisyUI's CSS transition for the `:checked` state.
+
+**Post-action navigation should use `router.replace`, not `router.push`.** After Save / Cancel / Delete on edit pages, replace the current history entry instead of pushing a new one. Otherwise the back button from the destination page lands on the edit page you just left.
+
+**Reset transient submission state before navigating.** Set `submitting` (or equivalent) back to `false` *before* calling `router.replace`. Next's Router Cache may snapshot the client component instance, and a `setSubmitting(false)` in a `finally` block can be skipped over by the in-progress unmount, leaving "Saving..." stuck on the cached page.
+
+**Cancel in-flight async work in `useEffect` cleanup.** Async data loads in `useEffect` should use a `cancelled` flag so React 19 StrictMode's dev-mode double-fire (or any later effect re-run) can't have a late-arriving fetch overwrite state the user has since edited. Pattern:
+```ts
+useEffect(() => {
+  let cancelled = false;
+  async function load() { /* ... */ if (cancelled) return; setX(...); }
+  load();
+  return () => { cancelled = true; };
+}, [deps]);
+```
+
 ## Frontend Page Status
 
 | Page | Status | Notes |
@@ -238,7 +278,7 @@ const clubId = Number(org);  // org is always a numeric club_id
 | `/clubs/[org]/settings` | ✅ Wired | Real members, save name, change role, remove member |
 | `/clubs/[org]/settings/add-members` | ✅ Wired | Calls `POST /api/clubs/:org/members/invite` |
 | `/clubs/[org]/category/[categoryId]/edit` | ❌ Not wired | UI built, needs `GET` to load + `PATCH`/`DELETE` on save |
-| `/clubs/[org]/category/[categoryId]/item/[itemId]/edit` | ❌ Not wired | UI built, needs `GET` to load + `PATCH`/`DELETE` on save |
+| `/clubs/[org]/category/[categoryId]/item/[itemId]/edit` | ✅ Wired | Server-component `page.tsx` wraps client `EditItemContent` (`edit-content.tsx`) in `<Suspense>`. Loads via `GET`, saves via `PATCH`, deletes via `DELETE`. Image-upload from this page is not yet wired (display-only). |
 | `/clubs/[org]/category/[categoryId]/item/[itemId]` | ❌ Not wired | Placeholder only — full page needed |
 
 ---
@@ -246,23 +286,12 @@ const clubId = Number(org);  // org is always a numeric club_id
 ## TODO
 
 ### High Priority
-- **Wire edit category page** (`/clubs/[org]/category/[categoryId]/edit`) — fetch current category data on load, wire Save to `PATCH /api/clubs/:org/category/:categoryId`, wire Delete to `DELETE /api/clubs/:org/category/:categoryId`. Note: the UI uses generic components (`ItemNameInput`, `Counter`, `AnnotatedImage`, `BigButton`, `DescriptionBox`) that need state passed into them.
-- **Wire edit item page** (`/clubs/[org]/category/[categoryId]/item/[itemId]/edit`) — fetch item on load via `GET /api/clubs/:org/category/:categoryId/items/:itemId`, wire Save to `PATCH`, wire Delete to `DELETE`. Condition and availability are radio buttons already in the UI.
-
-### Known Issues
-- **`condition` and `availability` enum columns** — PostgREST schema cache periodically drops these columns causing 500 errors. Workaround: run `NOTIFY pgrst, 'reload schema';` in Supabase SQL editor. Permanent fix: convert both columns from USER-DEFINED enum to `varchar` with CHECK constraints using this SQL:
-  ```sql
-  ALTER TABLE public.item ALTER COLUMN condition TYPE varchar USING condition::text;
-  ALTER TABLE public.item ADD CONSTRAINT item_condition_check CHECK (condition IN ('New', 'Fair', 'Damaged'));
-  ALTER TABLE public.item ALTER COLUMN availability TYPE varchar USING availability::text;
-  ALTER TABLE public.item ADD CONSTRAINT item_availability_check CHECK (availability IN ('Available', 'Checked Out'));
-  NOTIFY pgrst, 'reload schema';
-  ```
+- **Wire edit category page** (`/clubs/[org]/category/[categoryId]/edit`) — fetch current category data on load, wire Save to `PATCH /api/clubs/:org/category/:categoryId`, wire Delete to `DELETE /api/clubs/:org/category/:categoryId`. Note: the UI uses generic components (`ItemNameInput`, `Counter`, `AnnotatedImage`, `BigButton`, `DescriptionBox`) that need state passed into them. The edit-item page (`item/[itemId]/edit/edit-content.tsx`) is the reference pattern — replace those stub components with controlled inputs in-place.
+- **Image upload on edit-item page** — currently the edit page only displays the existing image. Adding a file picker that POSTs the new image via `PATCH` is the next step (the API already accepts an `image` field).
 
 ### Lower Priority
 - **Item detail page** (`/clubs/[org]/category/[categoryId]/item/[itemId]`) — currently a placeholder div. The category page popup already covers this use case, so low urgency.
-- **Ownership transfer** — no mechanism to transfer Owner role. Currently an Owner is stuck forever.
-- **Leave club for Owner** — Owner cannot leave; only option is deleting the club entirely (no endpoint for this yet).
+- **Leave club for Owner** — Owner cannot leave their own club directly. They can either delete the club entirely (Owner-only red button on settings, `DELETE /api/clubs/:org`) or transfer ownership to an existing Admin via the member dropdown's "Make Owner" option (`POST /api/clubs/:org/transfer-ownership`), which promotes the Admin and demotes the previous Owner to Admin (they remain in the club). To then leave entirely after transfer, the demoted ex-Owner uses the standard "leave club" flow.
 
 ## Route Implementation Notes
 
@@ -272,7 +301,9 @@ const clubId = Number(org);  // org is always a numeric club_id
 - **POST `/api/clubs/:org/category`** — Fields: `name` (required), `description` (optional), `quantity` (string, required), `image` (optional File). `club_id` comes from URL param.
 - **PATCH `/api/clubs/:org/category/:categoryId`** — Empty-string `description` is allowed; empty-string `name`/`quantity` is silently ignored.
 - **DELETE `/api/clubs/:org/category/:categoryId`** — Must delete all `item` rows with `cat_id = categoryId` first (foreign key constraint).
-- **GET `/api/clubs/:org/category/:categoryId/items`** — Search uses `ILIKE` across `name` OR `description`. Verifies category belongs to the club before returning.
-- **POST `/api/clubs/:org/category/:categoryId/items`** — Fields: `name` (required), `condition` (required), `availability` (defaults to `'Available'`), `description` (optional), `image` (optional File).
+- **GET `/api/clubs/:org/category/:categoryId/items`** — Search uses `ILIKE` across `name` OR `description`. Verifies category belongs to the club before returning. Returns `condition` and `availability` translated to human labels (see [Items: Label/Code Translation](#items-labelcode-translation)).
+- **GET `/api/clubs/:org/category/:categoryId/items/:itemId`** — Same translation applied to the single-item response. Requires club membership.
+- **POST `/api/clubs/:org/category/:categoryId/items`** — Fields: `name` (required), `condition` (`"New"|"Fair"|"Damaged"`, required), `availability` (`"Available"|"Checked Out"`, defaults to `"Available"`), `description` (optional), `image` (optional File). The handler maps the labels to the DB enum codes / boolean before insert.
+- **PATCH `/api/clubs/:org/category/:categoryId/items/:itemId`** — Same field set; only provided fields are updated. Empty-string `description` is allowed (clears the field). Empty-string `name`/`condition`/`availability` are silently ignored. Same label→code/boolean translation as POST.
 - **GET `/api/clubs/:org/settings`** — Returns `{ name, role }` where role is the current user's role in the club.
 - **POST `/api/clubs/:org/settings`** — Accepts `{ name?, roleChanges? }`. `roleChanges` is `[{ userId, role }]`. Cannot change Owner's role.

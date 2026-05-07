@@ -35,24 +35,19 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: newClub, error: clubError } = await supabase.from('Club')
-    .insert({ name: body.title })
-    .select('club_id, name')
-    .single();
-
-  if (clubError || !newClub) {
-    return NextResponse.json({ error: clubError?.message || "Failed to create club" }, { status: 400 });
+  const title = typeof body.title === 'string' ? body.title.trim() : '';
+  if (!title) {
+    return NextResponse.json({ error: "Tile name is required" }, { status: 400 });
   }
 
-  await supabase.from('Role').insert({ club_id: newClub.club_id, UID: user.id, role: 'Owner' });
-
+  let emailList: string[] = [];
   if (body.members) {
-    const emailList = body.members.split(',')
+    emailList = body.members.split(',')
       .map((email: string) => email.trim())
       .filter((email: string) => email.length > 0);
 
@@ -63,24 +58,53 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+  }
+
+  const { data: newClub, error: clubError } = await supabase.from('Club')
+    .insert({ name: title })
+    .select('club_id, name')
+    .single();
+
+  if (clubError || !newClub) {
+    if (clubError?.code === '23505') {
+      return NextResponse.json(
+        { error: `A club named "${title}" already exists. Please choose a different name.` },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: clubError?.message || "Failed to create club" }, { status: 400 });
+  }
+
+  // The Postgres trigger `on_club_created` (add_owner_on_club_create) inserts
+  // the caller's Role row as 'Owner' automatically — do not insert it here.
+
+  const inviteErrors: string[] = [];
+  if (emailList.length > 0) {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    
+
     for (const email of emailList) {
-      await resend.emails.send({
+      const { error: sendError } = await resend.emails.send({
         from: "Invites <invites@uinventory.xyz>",
         to: email,
         template: {
           id: 'club-invites',
-          variables : {
-            Club_Name : newClub.name,
-            Inviter : user.email || 'Unknown User', 
-            Club_Link : `${new URL(request.url).origin}/api/clubs/${newClub.club_id}/members/invite/accept`
-          }
-        }
+          variables: {
+            Club_Name: newClub.name,
+            Inviter: user.email || 'Unknown User',
+            Club_Link: `${new URL(request.url).origin}/api/clubs/${newClub.club_id}/members/invite/accept`,
+          },
+        },
       });
+      if (sendError) {
+        console.error(`[tiles] invite send failed for ${email}:`, sendError);
+        inviteErrors.push(`${email}: ${sendError.message ?? 'unknown error'}`);
+      }
     }
   }
 
-  return NextResponse.json({ success: true, club_id: newClub.club_id });
+  return NextResponse.json({
+    success: true,
+    club_id: newClub.club_id,
+    ...(inviteErrors.length > 0 && { invite_errors: inviteErrors }),
+  });
 }
