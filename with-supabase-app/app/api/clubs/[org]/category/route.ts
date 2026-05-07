@@ -50,7 +50,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
     const id = item.cat_id as number;
     if (!countMap[id]) countMap[id] = { total: 0, available: 0 };
     countMap[id].total += 1;
-    if (item.availability === 'Available') countMap[id].available += 1;
+    if (item.availability === true) countMap[id].available += 1;
   }
 
   const result = (categories ?? []).map((cat) => ({

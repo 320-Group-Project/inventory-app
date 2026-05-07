@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// DB stores condition as enum "1"|"2"|"3" and availability as boolean.
+// Frontend uses human-readable labels, so translate at the API boundary.
+const CONDITION_LABEL: Record<string, string> = { '1': 'Damaged', '2': 'Fair', '3': 'New' };
+const CONDITION_CODE: Record<string, string> = { Damaged: '1', Fair: '2', New: '3' };
+
 // Returns a single item by ID with all its fields.
 export async function GET(_request: Request, { params }: { params: Promise<{ org: string; categoryId: string; itemId: string }> }) {
   const supabase = await createClient();
@@ -36,7 +41,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
     return NextResponse.json({ error: error.message }, { status });
   }
 
-  return NextResponse.json({ item: data });
+  const item = {
+    ...data,
+    condition: data.condition ? (CONDITION_LABEL[data.condition] ?? null) : null,
+    availability: data.availability ? 'Available' : 'Checked Out',
+  };
+
+  return NextResponse.json({ item });
 }
 
 // Deletes a single item by ID (Admin or Owner only).
@@ -127,7 +138,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
   const availability = formData.get('availability') as string | null;
   const imageFile = formData.get('image') as File | null;
 
-  if (condition && !['New', 'Fair', 'Damaged'].includes(condition)) {
+  if (condition && !CONDITION_CODE[condition]) {
     return NextResponse.json({ error: 'condition must be "New", "Fair", or "Damaged"' }, { status: 400 });
   }
 
@@ -135,11 +146,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
     return NextResponse.json({ error: 'availability must be "Available" or "Checked Out"' }, { status: 400 });
   }
 
-  const updateData: { name?: string; description?: string; condition?: string; availability?: string; item_image_url?: string } = {};
+  const updateData: { name?: string; description?: string; condition?: string; availability?: boolean; item_image_url?: string } = {};
   if (name) updateData.name = name;
   if (description !== null) updateData.description = description;
-  if (condition) updateData.condition = condition;
-  if (availability) updateData.availability = availability;
+  if (condition) updateData.condition = CONDITION_CODE[condition];
+  if (availability) updateData.availability = availability === 'Available';
 
   if (imageFile && imageFile.size > 0) {
     const fileName = `item-${itemId}-${Date.now()}`;
