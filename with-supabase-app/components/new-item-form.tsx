@@ -64,6 +64,7 @@ export function NewItemForm({
         setSubmitting(false);
         return;
       }
+      setSubmitting(false);
       router.push(`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}`);
     } catch {
       setError("Network error");
