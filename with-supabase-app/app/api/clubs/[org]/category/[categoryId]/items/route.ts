@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// DB stores condition as enum "1"|"2"|"3" and availability as boolean.
+// Frontend uses human-readable labels, so translate at the API boundary.
+const CONDITION_LABEL: Record<string, string> = { '1': 'Damaged', '2': 'Fair', '3': 'New' };
+const CONDITION_CODE: Record<string, string> = { Damaged: '1', Fair: '2', New: '3' };
+
 // Returns all items in a category, filtered by name or description search.
 export async function GET(request: Request, { params }: { params: Promise<{ org: string; categoryId: string }> }) {
   const supabase = await createClient();
@@ -39,7 +44,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ items: data ?? [] });
+  const items = (data ?? []).map((row) => ({
+    ...row,
+    condition: row.condition ? (CONDITION_LABEL[row.condition] ?? null) : null,
+    availability: row.availability ? 'Available' : 'Checked Out',
+  }));
+
+  return NextResponse.json({ items });
 }
 
 // Creates a new item in a category (Admin or Owner only).
@@ -76,13 +87,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
     return NextResponse.json({ error: 'name and condition are required' }, { status: 400 });
   }
 
-  if (!['New', 'Fair', 'Damaged'].includes(condition)) {
+  const conditionCode = CONDITION_CODE[condition];
+  if (!conditionCode) {
     return NextResponse.json({ error: 'condition must be "New", "Fair", or "Damaged"' }, { status: 400 });
   }
 
   if (availability && !['Available', 'Checked Out'].includes(availability)) {
     return NextResponse.json({ error: 'availability must be "Available" or "Checked Out"' }, { status: 400 });
   }
+
+  // DB column is boolean: true = Available, false = Checked Out. Default true.
+  const availabilityBool = availability !== 'Checked Out';
 
   let item_image_url: string | null = null;
 
@@ -107,7 +122,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
 
   const { data, error } = await supabase
     .from('item')
-    .insert({ name, description, condition, availability: availability ?? 'Available', item_image_url, cat_id: Number(categoryId) })
+    .insert({ name, description, condition: conditionCode, availability: availabilityBool, item_image_url, cat_id: Number(categoryId) })
     .select('item_id')
     .single();
 
