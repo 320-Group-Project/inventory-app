@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/ui/navbar";
+import PageTitle from "@/components/ui/pageTitle";
 
 function EditCategoryContent() {
   const router = useRouter();
@@ -122,7 +123,9 @@ function EditCategoryContent() {
     <><Navbar />
     <div className="min-h-screen bg-base-100 text-base-content p-8 md:p-12">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-4xl font-normal mb-2">Edit Category</h1>
+        <div className="mb-2 -ml-4">
+          <PageTitle title="Edit Category" onClick={() => router.back()} />
+        </div>
         <hr className="border-secondary border-t-[3px] mt-4 mb-10 w-full" />
 
         {loading ? (
