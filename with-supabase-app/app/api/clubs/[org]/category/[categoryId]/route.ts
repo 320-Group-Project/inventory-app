@@ -1,6 +1,44 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Returns a single category by ID for club members.
+export async function GET(_request: Request, { params }: { params: Promise<{ org: string; categoryId: string }> }) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { org, categoryId } = await params;
+  const clubId = Number(org);
+
+  const { data: membership } = await supabase
+    .from('Role')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('UID', user.id)
+    .single();
+
+  if (!membership) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { data, error } = await supabase
+    .from('item_category')
+    .select('item_cat_id, name, description, quantity, item_cat_image_url')
+    .eq('item_cat_id', Number(categoryId))
+    .eq('club_id', clubId)
+    .single();
+
+  if (error) {
+    const status = error.code === 'PGRST116' ? 404 : 500;
+    return NextResponse.json({ error: error.message }, { status });
+  }
+
+  return NextResponse.json({ category: data });
+}
+
 // Updates a category's name, description, quantity, or image (Admin or Owner only).
 export async function PATCH(request: Request, { params }: { params: Promise<{ org: string; categoryId: string }> }) {
   const supabase = await createClient();

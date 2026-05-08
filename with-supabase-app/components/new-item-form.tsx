@@ -64,6 +64,15 @@ export function NewItemForm({
         setSubmitting(false);
         return;
       }
+      setName("");
+      setDescription("");
+      setCondition("New");
+      setAvailability("Available");
+      setImageFile(null);
+      setImagePreview(null);
+      setError(null);
+      setSubmitting(false);
+      router.refresh();
       router.push(`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}`);
     } catch {
       setError("Network error");
@@ -76,7 +85,7 @@ export function NewItemForm({
 
       {/* --- Top Nav Section --- */}
       <div className="w-full mb-8">
-        <PageTitle title="New Item" />
+        <PageTitle title="New Item" onClick={() => router.back()} />
         <hr className="border-secondary border-t-[3px] mt-4 w-full" />
       </div>
 
