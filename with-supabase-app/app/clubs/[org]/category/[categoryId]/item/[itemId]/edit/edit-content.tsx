@@ -49,9 +49,8 @@ export function EditItemContent() {
         setSubmitting(false);
         return;
       }
-      // Reset before navigating so the Router Cache doesn't snapshot the
-      // component with submitting=true and show "Saving..." next time.
       setSubmitting(false);
+      router.refresh();
       router.replace(`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}`);
     } catch {
       setSaveError("Network error");
@@ -80,6 +79,7 @@ export function EditItemContent() {
         return;
       }
       setSubmitting(false);
+      router.refresh();
       router.replace(`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}`);
     } catch {
       setSaveError("Network error");
