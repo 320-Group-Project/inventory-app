@@ -64,9 +64,10 @@ export async function POST(
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const inviteErrors: string[] = [];
 
   for (const email of emailList) {
-    await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: "Invites <invites@uinventory.xyz>",
       to: email,
       template: {
@@ -78,6 +79,17 @@ export async function POST(
         }
       }
     });
+    if (sendError) {
+      console.error(`[invite] send failed for ${email}:`, sendError);
+      inviteErrors.push(`${email}: ${sendError.message ?? 'unknown error'}`);
+    }
+  }
+
+  if (inviteErrors.length > 0) {
+    return NextResponse.json(
+      { error: `Failed to send some invites: ${inviteErrors.join('; ')}`, invite_errors: inviteErrors },
+      { status: 502 }
+    );
   }
 
   return NextResponse.json({ success: true });

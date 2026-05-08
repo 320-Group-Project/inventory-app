@@ -33,7 +33,10 @@ export default function Page() {
       return;
     }
 
-    router.push("/dashboard");
+    setTitle("");
+    setMembers("");
+    setSubmitting(false);
+    router.replace("/dashboard");
   }
 
   return (
