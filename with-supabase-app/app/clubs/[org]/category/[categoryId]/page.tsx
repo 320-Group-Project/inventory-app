@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, Suspense } from "react";
-import { Plus, Search, Settings, X } from "lucide-react";
+import { ImageOff, Plus, Search, Settings, X } from "lucide-react";
 import Back from "@/components/ui/back";
 import Navbar from "@/components/ui/navbar";
 
@@ -15,6 +15,14 @@ type Item = {
   condition: string | null;
   availability: string | null;
   item_image_url: string | null;
+};
+
+type CategoryInfo = {
+  item_cat_id: number;
+  name: string;
+  description: string | null;
+  quantity: string;
+  item_cat_image_url: string | null;
 };
 
 const conditionColor: Record<string, string> = {
@@ -29,6 +37,7 @@ function CategoryPage() {
   const org = (params?.org ?? "").toString();
   const categoryId = (params?.categoryId ?? "").toString();
 
+  const [category, setCategory] = useState<CategoryInfo | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -40,10 +49,16 @@ function CategoryPage() {
 
     async function load() {
       try {
-        const [itemsRes, roleRes] = await Promise.all([
+        const [catRes, itemsRes, roleRes] = await Promise.all([
+          fetch(`/api/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}`),
           fetch(`/api/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}/items`),
           fetch(`/api/clubs/${encodeURIComponent(org)}/members/me`),
         ]);
+
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategory(data.category ?? null);
+        }
 
         if (itemsRes.ok) {
           const data = await itemsRes.json();
@@ -61,6 +76,8 @@ function CategoryPage() {
 
     load();
   }, [org, categoryId]);
+
+  const isNonDistinct = category !== null && category.quantity !== "1";
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -84,18 +101,22 @@ function CategoryPage() {
             </div>
 
             <div className="relative min-w-0 flex-1">
-              <Input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Item name"
-                className="w-full rounded-full border-border bg-base-100 pr-10 pl-4 text-sm"
-                aria-label="Search items"
-              />
-              <Search
-                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden
-              />
+              {!isNonDistinct && (
+                <>
+                  <Input
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Item name"
+                    className="w-full rounded-full border-border bg-base-100 pr-10 pl-4 text-sm"
+                    aria-label="Search items"
+                  />
+                  <Search
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden
+                  />
+                </>
+              )}
             </div>
 
             {isAdmin ? (
@@ -106,21 +127,65 @@ function CategoryPage() {
                 <span className="hidden max-w-[5.5rem] text-[10px] leading-tight text-muted-foreground sm:block">
                   only staff can see
                 </span>
-                <Link
-                  href={`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}/item/new`}
-                  className="btn btn-circle btn-ghost btn-sm text-base-content"
-                  aria-label="New item"
-                >
-                  <Plus className="h-5 w-5" />
-                </Link>
+                {isNonDistinct ? (
+                  <Link
+                    href={`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}/edit`}
+                    className="btn btn-circle btn-ghost btn-sm text-base-content"
+                    aria-label="Edit category"
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}/item/new`}
+                    className="btn btn-circle btn-ghost btn-sm text-base-content"
+                    aria-label="New item"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Link>
+                )}
               </div>
             ) : null}
           </div>
 
           <hr className="my-4 border-border" />
 
-          {/* Item grid */}
-          {loading ? (
+          {/* Non-distinct: render category itself as a single-item detail */}
+          {!loading && isNonDistinct && category ? (
+            <div className="rounded-xl bg-base-100 border border-border overflow-hidden">
+              <div className="flex flex-col sm:flex-row min-h-80">
+                <div className="flex flex-1 flex-col justify-between p-8">
+                  <div>
+                    <h2 className="mb-4 text-2xl font-bold">{category.name}</h2>
+                    <p className="text-base text-muted-foreground leading-relaxed">
+                      {category.description}
+                    </p>
+                  </div>
+                  <div className="mt-8">
+                    <span className="inline-block rounded-full border border-emerald-400 px-4 py-1.5 text-sm font-semibold text-emerald-500">
+                      {category.quantity} Available
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full sm:w-64 shrink-0 aspect-[3/4] bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                  {category.item_cat_image_url ? (
+                    <img
+                      src={category.item_cat_image_url}
+                      alt={category.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ImageOff className="h-16 w-16 text-neutral-400" aria-hidden />
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Item grid (only for distinct categories) */}
+          {!isNonDistinct && (
+          loading ? (
             <p className="mt-6 text-center text-sm text-muted-foreground">Loading...</p>
           ) : filtered.length === 0 ? (
             <p className="mt-6 text-center text-sm text-muted-foreground">
@@ -134,18 +199,20 @@ function CategoryPage() {
                   <li key={item.item_id} className="group relative">
                     <button
                       type="button"
-                      className="block w-full overflow-hidden rounded-xl bg-base-200 text-left transition hover:bg-base-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className="block w-full overflow-hidden rounded-xl bg-base-200 border border-base-300/30 shadow-sm text-left transition hover:bg-base-300/20 hover:border-base-300/60 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       onClick={() => setSelected(item)}
                     >
                       {/* Picture area */}
-                      <div className="relative aspect-[3/4] w-full bg-neutral-300 dark:bg-neutral-600">
+                      <div className="relative aspect-[3/4] w-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
                         {item.item_image_url ? (
                           <img
                             src={item.item_image_url}
                             alt={item.name ?? `Item ${item.item_id}`}
                             className="h-full w-full object-cover"
                           />
-                        ) : null}
+                        ) : (
+                          <ImageOff className="h-12 w-12 text-neutral-400" aria-hidden />
+                        )}
                       </div>
 
                       {/* Info strip */}
@@ -173,7 +240,7 @@ function CategoryPage() {
                 );
               })}
             </ul>
-          )}
+          ))}
         </div>
       </div>
 
@@ -219,14 +286,16 @@ function CategoryPage() {
                 </div>
               </div>
 
-              <div className="w-full sm:w-64 shrink-0 aspect-[3/4] bg-neutral-300 dark:bg-neutral-600">
+              <div className="w-full sm:w-64 shrink-0 aspect-[3/4] bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
                 {selected.item_image_url ? (
                   <img
                     src={selected.item_image_url}
                     alt={selected.name ?? `Item ${selected.item_id}`}
                     className="h-full w-full object-cover"
                   />
-                ) : null}
+                ) : (
+                  <ImageOff className="h-16 w-16 text-neutral-400" aria-hidden />
+                )}
               </div>
             </div>
 
