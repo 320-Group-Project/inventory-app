@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/ui/navbar";
 
-export default function EditCategoryPage() {
+function EditCategoryContent() {
   const router = useRouter();
   const params = useParams<{ org: string; categoryId: string }>();
   const org = (params?.org ?? "").toString();
@@ -249,5 +249,13 @@ export default function EditCategoryPage() {
         )}
       </div>
     </div></>
+  );
+}
+
+export default function EditCategoryPage() {
+  return (
+    <Suspense>
+      <EditCategoryContent />
+    </Suspense>
   );
 }
