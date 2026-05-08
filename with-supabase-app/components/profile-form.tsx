@@ -91,7 +91,10 @@ export function ProfileForm({
   const handleLogout = async () => {
     setLoggingOut(true);
     await fetch("/auth/logout", { method: "POST" });
-    router.push("/auth/login");
+    setLoggingOut(false);
+    setShowLogoutConfirm(false);
+    router.refresh();
+    router.replace("/auth/login");
   };
 
   return (

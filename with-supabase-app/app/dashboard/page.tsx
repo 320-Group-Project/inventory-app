@@ -42,9 +42,12 @@ export default function Page() {
     setLeaving(true);
     const res = await fetch(`/api/clubs/${leaveTarget.club_id}/members/me`, { method: "DELETE" });
     setLeaving(false);
-    if (res.ok) {
-      setTiles((prev) => prev.filter((t) => t.club_id !== leaveTarget.club_id));
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to leave club.");
+      return;
     }
+    setTiles((prev) => prev.filter((t) => t.club_id !== leaveTarget.club_id));
     setLeaveTarget(null);
   }
 
