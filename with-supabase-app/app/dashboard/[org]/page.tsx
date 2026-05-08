@@ -87,13 +87,7 @@ function ClubDashboardPage() {
           </div>
 
           {isAdmin ? (
-            <div
-              className="flex shrink-0 items-center gap-1"
-              title="Only admins can see these actions"
-            >
-              <span className="hidden max-w-[4.5rem] text-[10px] leading-tight text-muted-foreground sm:block">
-                Admin
-              </span>
+            <div className="flex shrink-0 items-center gap-1">
               <Link
                 href={`/clubs/${encodeURIComponent(org)}/settings`}
                 className="btn btn-circle btn-ghost btn-sm text-base-content"

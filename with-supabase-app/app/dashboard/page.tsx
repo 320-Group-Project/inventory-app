@@ -65,8 +65,8 @@ export default function Page() {
         <div className="flex flex-row flex-wrap gap-8">
           {tiles.map((t) => {
             const isAdmin = ["Admin", "Owner"].includes(t.role);
-            const roleBar = isAdmin ? "bg-amber-400" : "bg-sky-500";
-            const roleText = isAdmin ? "text-amber-500" : "text-sky-500";
+            const roleBar = t.role === "Owner" ? "bg-red-600" : isAdmin ? "bg-amber-400" : "bg-sky-500";
+            const roleText = t.role === "Owner" ? "text-red-600" : isAdmin ? "text-amber-500" : "text-sky-500";
             return (
               <Link
                 key={t.club_id}
