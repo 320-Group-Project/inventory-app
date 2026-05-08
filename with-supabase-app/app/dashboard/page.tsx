@@ -65,8 +65,8 @@ export default function Page() {
         <div className="flex flex-row flex-wrap gap-8">
           {tiles.map((t) => {
             const isAdmin = ["Admin", "Owner"].includes(t.role);
-            const roleBar = t.role === "Owner" ? "bg-red-600" : isAdmin ? "bg-amber-400" : "bg-sky-500";
-            const roleText = t.role === "Owner" ? "text-red-600" : isAdmin ? "text-amber-500" : "text-sky-500";
+            const roleBar = t.role === "Owner" ? "bg-[#881c1c]" : isAdmin ? "bg-amber-400" : "bg-sky-500";
+            const roleText = t.role === "Owner" ? "text-[#881c1c]" : isAdmin ? "text-amber-500" : "text-sky-500";
             return (
               <Link
                 key={t.club_id}
@@ -133,7 +133,7 @@ export default function Page() {
               <button
                 type="button"
                 disabled={leaving}
-                className="btn btn-sm bg-red-500 text-white hover:bg-red-600 border-none disabled:opacity-60"
+                className="btn btn-sm bg-red-500 text-white hover:bg-[#881c1c] border-none disabled:opacity-60"
                 onClick={confirmLeave}
               >
                 {leaving ? "Leaving..." : "Leave"}
