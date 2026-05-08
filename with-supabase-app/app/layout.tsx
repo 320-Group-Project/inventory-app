@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="ULight" suppressHydrationWarning>
-      <body className={`${geistSans.className} ${lora.variable} antialiased`}>
+      <body className={`${lora.className} ${geistSans.variable} ${lora.variable} antialiased`}>
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="ULight"

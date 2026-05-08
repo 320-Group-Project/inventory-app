@@ -25,6 +25,8 @@ function TileSettingsPage() {
   const [savingName, setSavingName] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [nameSaved, setNameSaved] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -71,14 +73,21 @@ function TileSettingsPage() {
   async function handleSaveName() {
     if (!clubName.trim() || clubName.trim() === savedName) return;
     setSavingName(true);
+    setNameSaved(false);
+    setNameError(null);
     const res = await fetch(`/api/clubs/${org}/settings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: clubName.trim() }),
     });
     setSavingName(false);
-    if (res.ok) setSavedName(clubName.trim());
-    else alert("Failed to save club name.");
+    if (res.ok) {
+      setSavedName(clubName.trim());
+      setNameSaved(true);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setNameError(data.error ?? "Failed to save club name.");
+    }
   }
 
   async function handleChangeRole(userId: string, newRole: string) {
@@ -196,9 +205,7 @@ function TileSettingsPage() {
       <Navbar />
       <div className="flex flex-col items-left justify-center gap-4 p-8">
         <div className="flex items-center justify-between w-full">
-          <button className="btn btn-ghost btn-circle hover:bg-base-200" onClick={() => router.back()}>
-            <Back />
-          </button>
+          <Back onClick={() => router.replace("/dashboard")} />
           {isOwner && !loading && (
             <button
               className="btn bg-red-600 text-white hover:bg-red-700 border-none rounded-lg"
@@ -214,13 +221,13 @@ function TileSettingsPage() {
         ) : (
           <>
             {isAdmin && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <input
                   type="text"
                   placeholder="Club name"
                   className="input input-bordered input-primary w-full max-w-xs border-2 border-primary rounded-lg"
                   value={clubName}
-                  onChange={(e) => setClubName(e.target.value)}
+                  onChange={(e) => { setClubName(e.target.value); setNameSaved(false); setNameError(null); }}
                 />
                 <button
                   className="btn btn-primary rounded-lg px-5 disabled:opacity-40"
@@ -229,6 +236,12 @@ function TileSettingsPage() {
                 >
                   {savingName ? "Saving..." : "Save Name"}
                 </button>
+                {nameSaved && (
+                  <span className="text-green-600 text-sm font-medium">Saved successfully</span>
+                )}
+                {nameError && (
+                  <span className="text-red-500 text-sm font-medium">{nameError}</span>
+                )}
               </div>
             )}
 

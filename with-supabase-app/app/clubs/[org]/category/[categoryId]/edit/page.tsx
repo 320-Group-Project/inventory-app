@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Checkbox } from "@/components/ui/checkbox";
 import Navbar from "@/components/ui/navbar";
 import PageTitle from "@/components/ui/pageTitle";
 
@@ -14,6 +15,7 @@ function EditCategoryContent() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState("1");
+  const [isDistinct, setIsDistinct] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,9 @@ function EditCategoryContent() {
         if (cancelled) return;
         setName(category.name ?? "");
         setDescription(category.description ?? "");
-        setQuantity(category.quantity ?? "1");
+        const loadedQty = category.quantity ?? "1";
+        setQuantity(loadedQty);
+        setIsDistinct(loadedQty === "1");
         if (category.item_cat_image_url) setImagePreview(category.item_cat_image_url);
       } catch {
         if (!cancelled) setLoadError("Network error");
@@ -53,6 +57,12 @@ function EditCategoryContent() {
     load();
     return () => { cancelled = true; };
   }, [org, categoryId]);
+
+  function toggleDistinct(checked: boolean) {
+    setIsDistinct(checked);
+    if (checked) setQuantity("1");
+    else if (quantity === "1") setQuantity("2");
+  }
 
   function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
@@ -149,32 +159,48 @@ function EditCategoryContent() {
                 />
               </div>
 
-              {/* Quantity */}
-              <div className="flex flex-col gap-2">
-                <label className="text-2xl font-normal">Quantity</label>
-                <div className="flex items-center h-10 w-fit">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => String(Math.max(1, (parseInt(q) || 1) - 1)))}
-                    disabled={quantity === "1"}
-                    className="bg-base-200 hover:bg-base-300 h-full px-4 text-xl flex items-center justify-center transition-colors disabled:opacity-40"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(String(Math.max(1, parseInt(e.target.value) || 1)))}
-                    className="w-16 h-full border-[2px] border-secondary rounded-none text-center text-lg focus:outline-none bg-transparent appearance-none"
+              {/* Distinct toggle + Quantity */}
+              <div className="flex items-end gap-12 h-16">
+                <div className="flex items-center gap-3 mb-1">
+                  <Checkbox
+                    id="distinct"
+                    checked={isDistinct}
+                    onCheckedChange={(checked) => toggleDistinct(!!checked)}
+                    className="w-6 h-6 border-2 border-secondary rounded-sm data-[state=checked]:bg-secondary data-[state=checked]:text-base-100"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => String((parseInt(q) || 1) + 1))}
-                    className="bg-base-200 hover:bg-base-300 h-full px-4 text-xl flex items-center justify-center transition-colors"
-                  >
-                    +
-                  </button>
+                  <label htmlFor="distinct" className="text-xl cursor-pointer">
+                    Distinct Items
+                  </label>
                 </div>
+
+                {!isDistinct && (
+                  <div className="flex flex-col items-center gap-1">
+                    <label className="text-lg">Quantity</label>
+                    <div className="flex items-center h-8">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => String(Math.max(2, (parseInt(q) || 2) - 1)))}
+                        disabled={quantity === "2"}
+                        className="bg-base-200 hover:bg-base-300 h-full px-3 text-xl flex items-center justify-center transition-colors disabled:opacity-40"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => setQuantity(String(Math.max(2, parseInt(e.target.value) || 2)))}
+                        className="w-14 h-full border-[2px] border-secondary rounded-none text-center text-lg focus:outline-none bg-transparent m-0 appearance-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => String((parseInt(q) || 2) + 1))}
+                        className="bg-base-200 hover:bg-base-300 h-full px-3 text-xl flex items-center justify-center transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {saveError && <p className="text-sm text-red-500">{saveError}</p>}
@@ -232,9 +258,14 @@ function EditCategoryContent() {
                   </svg>
                 )}
               </button>
-              <div style={{ backgroundColor: "#C5C5C5", height: 68, width: 230, display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ backgroundColor: "#C5C5C5", height: 68, width: 230, display: "flex", justifyContent: "center", alignItems: "center" }}
+                className="hover:opacity-90 transition-opacity"
+              >
                 <p className="text-xl">{imageFile ? imageFile.name : "Change Image"}</p>
-              </div>
+              </button>
             </div>
 
             {/* Description */}

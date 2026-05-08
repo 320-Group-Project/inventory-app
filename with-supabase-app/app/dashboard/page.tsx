@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Settings } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type Tile = {
   club_id: number;
@@ -18,12 +19,22 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [leaveTarget, setLeaveTarget] = useState<Tile | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [email, setEmail] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/tiles")
       .then((r) => r.json())
       .then((data) => setTiles(data.tiles ?? []))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!cancelled) setEmail(user?.email ?? "");
+    });
+    return () => { cancelled = true; };
   }, []);
 
   async function confirmLeave() {
@@ -45,6 +56,11 @@ export default function Page() {
           My Tiles
         </h1>
         <div className="flex items-center gap-3">
+          {email && (
+            <span className="text-sm text-muted-foreground truncate max-w-[16rem]" title={email}>
+              {email}
+            </span>
+          )}
           <Link
             href="/profile"
             className="btn btn-circle bg-card text-card-foreground border border-border shadow-sm hover:bg-accent"
@@ -60,7 +76,7 @@ export default function Page() {
       {loading ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : tiles.length === 0 ? (
-        <p className="text-muted-foreground">You're not in any clubs yet. Create one below!</p>
+        <p className="text-muted-foreground">You&apos;re not in any clubs yet. Create one below!</p>
       ) : (
         <div className="flex flex-row flex-wrap gap-8">
           {tiles.map((t) => {

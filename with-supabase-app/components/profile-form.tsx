@@ -18,6 +18,7 @@ export function ProfileForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(true);
   const [error, setError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [pictureFile, setPictureFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +60,8 @@ export function ProfileForm({
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setSaveSuccess(false);
+    setError("");
 
     const formData = new FormData();
     formData.append("fname", firstName);
@@ -74,15 +77,19 @@ export function ProfileForm({
 
     if (!response.ok) {
       const payload = await response.json().catch(() => ({ error: "Unknown error" }));
-      alert("Failed to save profile: " + payload.error);
+      setError("Failed to save profile: " + payload.error);
       return;
     }
 
-    alert("Profile saved successfully!");
+    setSaveSuccess(true);
   };
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Function to handle logging out
   const handleLogout = async () => {
+    setLoggingOut(true);
     await fetch("/auth/logout", { method: "POST" });
     router.push("/auth/login");
   };
@@ -141,7 +148,7 @@ export function ProfileForm({
                 type="text"
                 required
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={(e) => { setFirstName(e.target.value); setSaveSuccess(false); }}
                 className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
                 placeholder="First Name"
               />
@@ -153,13 +160,13 @@ export function ProfileForm({
                 type="text"
                 required
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => { setLastName(e.target.value); setSaveSuccess(false); }}
                 className="border-2 border-secondary/50 focus-visible:ring-0 focus-visible:border-secondary rounded-sm h-auto py-3 text-lg bg-transparent"
                 placeholder="Last Name"
               />
             </div>
 
-            <div className="flex gap-4 mt-2">
+            <div className="flex items-center gap-4 mt-2">
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -170,15 +177,50 @@ export function ProfileForm({
 
               <Button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="bg-secondary text-base-100 hover:bg-secondary/90 px-8 h-14 text-lg rounded-xl"
               >
                 Logout
               </Button>
+
+              {saveSuccess && (
+                <span className="text-green-600 text-base font-medium">Saved successfully</span>
+              )}
             </div>
           </form>
         </div>
       </div>
+
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card text-card-foreground border border-border rounded-2xl shadow-2xl p-8 w-96 flex flex-col gap-4">
+            <div>
+              <h2 className="text-xl font-bold mb-1">Sign out?</h2>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to sign out of your account?
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                disabled={loggingOut}
+                className="bg-base-200 text-base-content hover:bg-base-300/40 border border-base-300 h-11 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="bg-secondary text-base-100 hover:bg-secondary/90 h-11 rounded-xl"
+              >
+                {loggingOut ? "Signing out..." : "Sign out"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

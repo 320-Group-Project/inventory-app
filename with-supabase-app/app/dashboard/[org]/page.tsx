@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, Suspense } from "react";
-import { Plus, Search, Settings, X } from "lucide-react";
+import { Plus, Search, Settings } from "lucide-react";
 import Back from "@/components/ui/back";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/ui/navbar";
@@ -27,7 +27,6 @@ function ClubDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Category | null>(null);
 
   useEffect(() => {
     if (!org) return;
@@ -117,40 +116,29 @@ function ClubDashboardPage() {
           <p className="mt-6 text-center text-sm text-muted-foreground">Loading...</p>
         ) : (
           <>
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-3">
               {filtered.map((cat) => {
                 const isDistinct = cat.quantity === "1";
-                const rowClass = "flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 px-3 py-3 transition hover:bg-base-300 sm:px-4";
+                const rowClass = "flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 border border-base-300/20 shadow-sm px-5 py-5 transition hover:bg-base-300/10 hover:shadow-md sm:px-6";
                 const availLabel = isDistinct
                   ? `${cat.available_count}/${cat.total_count} Available`
                   : `${cat.quantity} Available`;
                 return (
                   <li key={cat.item_cat_id} className="flex items-center gap-2">
-                    {isDistinct ? (
-                      <Link
-                        href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}`}
-                        className={rowClass}
-                      >
-                        <span className="min-w-0 truncate text-sm font-medium">{cat.name}</span>
-                        <span className="shrink-0 pl-3 text-sm text-muted-foreground">{availLabel}</span>
-                      </Link>
-                    ) : (
-                      <button
-                        type="button"
-                        className={rowClass + " w-full text-left"}
-                        onClick={() => setSelected(cat)}
-                      >
-                        <span className="min-w-0 truncate text-sm font-medium">{cat.name}</span>
-                        <span className="shrink-0 pl-3 text-sm text-muted-foreground">{availLabel}</span>
-                      </button>
-                    )}
+                    <Link
+                      href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}`}
+                      className={rowClass}
+                    >
+                      <span className="min-w-0 truncate text-lg font-semibold">{cat.name}</span>
+                      <span className="shrink-0 pl-3 text-base text-muted-foreground">{availLabel}</span>
+                    </Link>
                     {isAdmin && (
                       <Link
                         href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}/edit`}
-                        className="btn btn-square btn-ghost btn-sm shrink-0 text-base-content"
+                        className="btn btn-square btn-ghost shrink-0 text-base-content"
                         aria-label={`Settings for ${cat.name}`}
                       >
-                        <Settings className="h-4 w-4" />
+                        <Settings className="h-5 w-5" />
                       </Link>
                     )}
                   </li>
@@ -167,54 +155,6 @@ function ClubDashboardPage() {
         )}
       </div>
     </div>
-
-    {/* Nondistinct category detail popup */}
-    {selected && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        onClick={() => setSelected(null)}
-      >
-        <div
-          className="relative w-full max-w-3xl rounded-2xl bg-card text-card-foreground border border-border shadow-2xl overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="absolute right-4 top-4 z-10 btn btn-circle btn-ghost btn-sm"
-            aria-label="Close"
-            onClick={() => setSelected(null)}
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <div className="flex flex-col sm:flex-row min-h-80">
-            <div className="flex flex-1 flex-col justify-between p-8">
-              <div>
-                <h2 className="mb-4 text-2xl font-bold">{selected.name}</h2>
-                <p className="text-base text-muted-foreground leading-relaxed">
-                  {selected.description}
-                </p>
-              </div>
-              <div className="mt-8">
-                <span className="inline-block rounded-full border border-emerald-400 px-4 py-1.5 text-sm font-semibold text-emerald-500">
-                  {selected.quantity} Available
-                </span>
-              </div>
-            </div>
-
-            <div className="w-full sm:w-64 shrink-0 aspect-[3/4] bg-neutral-300 dark:bg-neutral-600">
-              {selected.item_cat_image_url ? (
-                <img
-                  src={selected.item_cat_image_url}
-                  alt={selected.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
     </>
   );
 }
