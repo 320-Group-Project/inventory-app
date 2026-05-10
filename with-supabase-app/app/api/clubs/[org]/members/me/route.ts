@@ -56,14 +56,22 @@ export async function DELETE(
     return NextResponse.json({ error: 'Club Owner cannot leave — transfer ownership first' }, { status: 403 });
   }
 
-  const { error } = await supabase
+  const { data: deleted, error } = await supabase
     .from('Role')
     .delete()
     .eq('club_id', clubId)
-    .eq('UID', user.id);
+    .eq('UID', user.id)
+    .select('club_id');
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!deleted || deleted.length === 0) {
+    return NextResponse.json(
+      { error: "Could not leave club — no row was removed. The Supabase RLS DELETE policy on the Role table (\"UID\" = auth.uid()) is likely missing." },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ success: true });

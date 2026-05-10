@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Settings } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type Tile = {
   club_id: number;
@@ -18,6 +19,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [leaveTarget, setLeaveTarget] = useState<Tile | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [email, setEmail] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/tiles")
@@ -26,14 +28,26 @@ export default function Page() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!cancelled) setEmail(user?.email ?? "");
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   async function confirmLeave() {
     if (!leaveTarget) return;
     setLeaving(true);
     const res = await fetch(`/api/clubs/${leaveTarget.club_id}/members/me`, { method: "DELETE" });
     setLeaving(false);
-    if (res.ok) {
-      setTiles((prev) => prev.filter((t) => t.club_id !== leaveTarget.club_id));
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to leave club.");
+      return;
     }
+    setTiles((prev) => prev.filter((t) => t.club_id !== leaveTarget.club_id));
     setLeaveTarget(null);
   }
 
@@ -45,6 +59,11 @@ export default function Page() {
           My Tiles
         </h1>
         <div className="flex items-center gap-3">
+          {email && (
+            <span className="text-sm text-muted-foreground truncate max-w-[16rem]" title={email}>
+              {email}
+            </span>
+          )}
           <Link
             href="/profile"
             className="btn btn-circle bg-card text-card-foreground border border-border shadow-sm hover:bg-accent"
@@ -60,13 +79,13 @@ export default function Page() {
       {loading ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : tiles.length === 0 ? (
-        <p className="text-muted-foreground">You're not in any clubs yet. Create one below!</p>
+        <p className="text-muted-foreground">You&apos;re not in any clubs yet. Create one below!</p>
       ) : (
         <div className="flex flex-row flex-wrap gap-8">
           {tiles.map((t) => {
             const isAdmin = ["Admin", "Owner"].includes(t.role);
-            const roleBar = isAdmin ? "bg-amber-400" : "bg-sky-500";
-            const roleText = isAdmin ? "text-amber-500" : "text-sky-500";
+            const roleBar = t.role === "Owner" ? "bg-[#881c1c]" : isAdmin ? "bg-amber-400" : "bg-sky-500";
+            const roleText = t.role === "Owner" ? "text-[#881c1c]" : isAdmin ? "text-amber-500" : "text-sky-500";
             return (
               <Link
                 key={t.club_id}
@@ -133,7 +152,7 @@ export default function Page() {
               <button
                 type="button"
                 disabled={leaving}
-                className="btn btn-sm bg-red-500 text-white hover:bg-red-600 border-none disabled:opacity-60"
+                className="btn btn-sm bg-red-500 text-white hover:bg-[#881c1c] border-none disabled:opacity-60"
                 onClick={confirmLeave}
               >
                 {leaving ? "Leaving..." : "Leave"}

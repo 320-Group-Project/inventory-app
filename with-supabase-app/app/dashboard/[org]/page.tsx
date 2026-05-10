@@ -86,13 +86,7 @@ function ClubDashboardPage() {
           </div>
 
           {isAdmin ? (
-            <div
-              className="flex shrink-0 items-center gap-1"
-              title="Only admins can see these actions"
-            >
-              <span className="hidden max-w-[4.5rem] text-[10px] leading-tight text-muted-foreground sm:block">
-                Admin
-              </span>
+            <div className="flex shrink-0 items-center gap-1">
               <Link
                 href={`/clubs/${encodeURIComponent(org)}/settings`}
                 className="btn btn-circle btn-ghost btn-sm text-base-content"
@@ -116,29 +110,34 @@ function ClubDashboardPage() {
           <p className="mt-6 text-center text-sm text-muted-foreground">Loading...</p>
         ) : (
           <>
-            <ul className="flex flex-col gap-2">
-              {filtered.map((cat) => (
-                <li key={cat.item_cat_id} className="flex items-center gap-2">
-                  <Link
-                    href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}`}
-                    className="flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 px-3 py-3 transition hover:bg-base-300 sm:px-4"
-                  >
-                    <span className="min-w-0 truncate text-sm font-medium">{cat.name}</span>
-                    <span className="shrink-0 pl-3 text-sm text-muted-foreground">
-                      {cat.available_count}/{cat.total_count} Available
-                    </span>
-                  </Link>
-                  {isAdmin && (
+            <ul className="flex flex-col gap-3">
+              {filtered.map((cat) => {
+                const isDistinct = cat.quantity === "1";
+                const rowClass = "flex min-w-0 flex-1 items-center justify-between rounded-lg bg-base-200 border border-base-300/20 shadow-sm px-5 py-5 transition hover:bg-base-300/10 hover:shadow-md sm:px-6";
+                const availLabel = isDistinct
+                  ? `${cat.available_count}/${cat.total_count} Available`
+                  : `${cat.quantity} Available`;
+                return (
+                  <li key={cat.item_cat_id} className="flex items-center gap-2">
                     <Link
-                      href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}/edit`}
-                      className="btn btn-square btn-ghost btn-sm shrink-0 text-base-content"
-                      aria-label={`Settings for ${cat.name}`}
+                      href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}`}
+                      className={rowClass}
                     >
-                      <Settings className="h-4 w-4" />
+                      <span className="min-w-0 truncate text-lg font-semibold">{cat.name}</span>
+                      <span className="shrink-0 pl-3 text-base text-muted-foreground">{availLabel}</span>
                     </Link>
-                  )}
-                </li>
-              ))}
+                    {isAdmin && (
+                      <Link
+                        href={`/clubs/${encodeURIComponent(org)}/category/${cat.item_cat_id}/edit`}
+                        className="btn btn-square btn-ghost shrink-0 text-base-content"
+                        aria-label={`Settings for ${cat.name}`}
+                      >
+                        <Settings className="h-5 w-5" />
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
 
             {filtered.length === 0 && (

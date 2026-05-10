@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Back from "@/components/ui/back";
 
@@ -19,10 +19,18 @@ export function EditItemContent() {
   const [condition, setCondition] = useState<Condition>("New");
   const [available, setAvailable] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    if (file) setImageUrl(URL.createObjectURL(file));
+  }
 
   async function handleSave() {
     if (!name.trim()) {
@@ -37,6 +45,7 @@ export function EditItemContent() {
     fd.append("description", description);
     fd.append("condition", condition);
     fd.append("availability", available ? "Available" : "Checked Out");
+    if (imageFile) fd.append("image", imageFile);
 
     try {
       const res = await fetch(
@@ -49,9 +58,8 @@ export function EditItemContent() {
         setSubmitting(false);
         return;
       }
-      // Reset before navigating so the Router Cache doesn't snapshot the
-      // component with submitting=true and show "Saving..." next time.
       setSubmitting(false);
+      router.refresh();
       router.replace(`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}`);
     } catch {
       setSaveError("Network error");
@@ -80,6 +88,7 @@ export function EditItemContent() {
         return;
       }
       setSubmitting(false);
+      router.refresh();
       router.replace(`/clubs/${encodeURIComponent(org)}/category/${encodeURIComponent(categoryId)}`);
     } catch {
       setSaveError("Network error");
@@ -129,9 +138,9 @@ export function EditItemContent() {
   return (
     <div className="min-h-screen bg-base-100 text-base-content p-8 md:p-12">
       <div className="max-w-5xl mx-auto">
-        <button className="btn btn-ghost btn-circle hover:bg-base-200 mb-2" onClick={() => router.back()}>
-          <Back />
-        </button>
+        <div className="mb-2">
+          <Back onClick={() => router.back()} />
+        </div>
         <h1 className="text-4xl font-normal mb-2 mt-2">Edit Item</h1>
         <hr className="border-base-300 border-t mb-10 w-full" />
 
@@ -163,7 +172,6 @@ export function EditItemContent() {
                     <label key={c} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        name="condition"
                         value={c}
                         checked={condition === c}
                         onChange={(e) => setCondition(e.target.value as Condition)}
@@ -182,7 +190,6 @@ export function EditItemContent() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="availability"
                       value="Available"
                       checked={available}
                       onChange={(e) => setAvailable(e.target.value === "Available")}
@@ -193,7 +200,6 @@ export function EditItemContent() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="availability"
                       value="Checked Out"
                       checked={!available}
                       onChange={(e) => setAvailable(e.target.value === "Available")}
@@ -240,8 +246,17 @@ export function EditItemContent() {
 
             {/* Image */}
             <div className="flex-shrink-0 mt-4 md:mt-0">
-              <div
-                className="bg-[#d9d9d9] flex items-center justify-center"
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={pickImage}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-[#d9d9d9] hover:bg-[#d0d0d0] transition-colors flex items-center justify-center"
                 style={{ height: 230, width: 230 }}
               >
                 {imageUrl ? (
@@ -252,10 +267,15 @@ export function EditItemContent() {
                     <path d="M13.75 57.75H52.25C55.2876 57.75 57.75 55.2876 57.75 52.25V13.75C57.75 10.7124 55.2876 8.25 52.25 8.25H13.75C10.7124 8.25 8.25 10.7124 8.25 13.75V52.25C8.25 55.2876 10.7124 57.75 13.75 57.75ZM13.75 57.75L44 27.5L57.75 41.25M27.5 23.375C27.5 25.6532 25.6532 27.5 23.375 27.5C21.0968 27.5 19.25 25.6532 19.25 23.375C19.25 21.0968 21.0968 19.25 23.375 19.25C25.6532 19.25 27.5 21.0968 27.5 23.375Z" stroke="#1E1E1E" strokeWidth="5.775" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 )}
-              </div>
-              <div style={{ backgroundColor: "#C5C5C5", height: 68, width: 230, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <p className="text-xl">Change Image</p>
-              </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ backgroundColor: "#C5C5C5", height: 68, width: 230, display: "flex", justifyContent: "center", alignItems: "center" }}
+                className="hover:opacity-90 transition-opacity"
+              >
+                <p className="text-xl">{imageFile ? imageFile.name : "Change Image"}</p>
+              </button>
             </div>
 
             {/* Description */}
